@@ -1,5 +1,5 @@
 import 'webextension-polyfill';
-import { dbManager } from '@extension/shared';
+import { dbManager, safeSendTabMessage } from '@extension/shared';
 import { copyFormatStorage } from '@extension/storage';
 
 console.log('[LovpenSider] Background script loaded');
@@ -44,7 +44,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           console.log('[LovpenSider] Side panel opened successfully');
           // 通知所有内容脚本更新徽章状态
           if (sender.tab?.id) {
-            chrome.tabs.sendMessage(sender.tab.id, { action: 'sidebarStateChanged', isOpen: true });
+            safeSendTabMessage(sender.tab.id, { action: 'sidebarStateChanged', isOpen: true });
           }
           sendResponse({ success: true });
         })
@@ -106,7 +106,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           console.log('[LovpenSider] Close panel attempts completed');
           // 通知所有内容脚本更新徽章状态
           if (sender.tab?.id) {
-            chrome.tabs.sendMessage(sender.tab.id, { action: 'sidebarStateChanged', isOpen: false });
+            safeSendTabMessage(sender.tab.id, { action: 'sidebarStateChanged', isOpen: false });
           }
           sendResponse({ success: true });
         })
@@ -114,7 +114,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           console.error('[LovpenSider] All close methods failed:', error);
           // 即使关闭失败，也要更新徽章状态
           if (sender.tab?.id) {
-            chrome.tabs.sendMessage(sender.tab.id, { action: 'sidebarStateChanged', isOpen: false });
+            safeSendTabMessage(sender.tab.id, { action: 'sidebarStateChanged', isOpen: false });
           }
           sendResponse({ success: false, error: 'Cannot close sidebar programmatically' });
         });
@@ -167,6 +167,7 @@ chrome.windows.onFocusChanged.addListener(async windowId => {
     // 获取当前活动标签
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab?.id) {
+      const tabId = tab.id;
       // 检查侧边栏是否打开
       // 注意：Chrome API 没有直接的方法检查侧边栏状态
       // 这里我们可以尝试发送消息到侧边栏，如果失败则说明已关闭
@@ -174,11 +175,11 @@ chrome.windows.onFocusChanged.addListener(async windowId => {
         .sendMessage({ action: 'ping' })
         .then(() => {
           // 侧边栏响应，说明还开着
-          chrome.tabs.sendMessage(tab.id!, { action: 'sidebarStateChanged', isOpen: true });
+          safeSendTabMessage(tabId, { action: 'sidebarStateChanged', isOpen: true });
         })
         .catch(() => {
           // 侧边栏没响应，说明已关闭
-          chrome.tabs.sendMessage(tab.id!, { action: 'sidebarStateChanged', isOpen: false });
+          safeSendTabMessage(tabId, { action: 'sidebarStateChanged', isOpen: false });
         });
     }
   } catch (error) {

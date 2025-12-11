@@ -3,6 +3,8 @@
  * 直接按住徽章即可拖动，智能区分点击和拖拽操作
  */
 
+import { safeSendMessage } from './helpers.js';
+
 export class FloatingBadgeSimple {
   private container: HTMLDivElement | null = null;
   private button: HTMLButtonElement | null = null;
@@ -338,7 +340,7 @@ export class FloatingBadgeSimple {
       this.button.style.background = this.isOpen ? '#629A90' : '#D97757';
     }
 
-    chrome.runtime.sendMessage({
+    safeSendMessage({
       action: this.isOpen ? 'openSidePanel' : 'closeSidePanel',
     });
   }

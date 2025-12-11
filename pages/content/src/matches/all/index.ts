@@ -5,6 +5,7 @@ import {
   ElementMarker,
   FloatingBadge,
   FloatingBadgeSimple,
+  safeSendMessage,
 } from '@extension/shared';
 import type { FormFillRequest, SitePreset, FloatingBadgeConfig } from '@extension/shared';
 
@@ -59,7 +60,7 @@ class LovpenSiderElementSelector extends ElementSelector {
     const data = this.getSelectedElementData();
     if (data) {
       // 发送数据到侧边栏
-      chrome.runtime.sendMessage({
+      safeSendMessage({
         action: 'elementSelected',
         html: data.html,
         markdown: data.markdown,
@@ -69,7 +70,7 @@ class LovpenSiderElementSelector extends ElementSelector {
     }
 
     // 通知侧边栏导航模式已退出
-    chrome.runtime.sendMessage({
+    safeSendMessage({
       action: 'navigationExited',
     });
   }
@@ -78,7 +79,7 @@ class LovpenSiderElementSelector extends ElementSelector {
     const data = this.getSelectedElementData();
     if (data) {
       // 实时更新侧边栏中的数据
-      chrome.runtime.sendMessage({
+      safeSendMessage({
         action: 'elementDataUpdate',
         html: data.html,
         markdown: data.markdown,
@@ -90,7 +91,7 @@ class LovpenSiderElementSelector extends ElementSelector {
 
   protected onSelectionCancelled(): void {
     // 通知侧边栏选择已停止
-    chrome.runtime.sendMessage({
+    safeSendMessage({
       action: 'selectionStopped',
     });
   }

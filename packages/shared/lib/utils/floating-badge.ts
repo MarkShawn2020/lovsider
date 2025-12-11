@@ -4,6 +4,7 @@
  */
 
 import { EdgeSnappingManager } from './edge-snapping.js';
+import { safeSendMessage } from './helpers.js';
 import type { EdgeSnappingConfig } from './edge-snapping.js';
 
 export interface FloatingBadgeConfig {
@@ -647,7 +648,7 @@ export class FloatingBadge {
     this.state.sidebarOpen = !this.state.sidebarOpen;
 
     // 发送消息到 background script
-    chrome.runtime.sendMessage({
+    safeSendMessage({
       action: this.state.sidebarOpen ? 'openSidePanel' : 'closeSidePanel',
       source: 'floating-badge',
     });
@@ -892,7 +893,7 @@ export class FloatingBadge {
    */
   private saveState(): void {
     // 发送消息保存状态
-    chrome.runtime.sendMessage({
+    safeSendMessage({
       action: 'saveFloatingBadgeState',
       state: this.state,
     });
@@ -903,7 +904,7 @@ export class FloatingBadge {
    */
   public async loadState(): Promise<void> {
     try {
-      const response = await chrome.runtime.sendMessage({
+      const response = await safeSendMessage<{ state: FloatingBadgeState | null }>({
         action: 'getFloatingBadgeState',
       });
 
