@@ -340,9 +340,9 @@ const SimpleCaptureModule = () => {
     if (!markdownOutput) return;
 
     try {
-      // 从 markdown 内容中提取 slug
-      const slug = extractSlugFromMarkdown(markdownOutput);
-      const filename = `${slug}.md`;
+      // 从 markdown 内容中提取 title
+      const title = extractTitleFromMarkdown(markdownOutput);
+      const filename = `${title}.md`;
 
       // 获取下载设置
       const settings = await downloadSettingsStorage.getSettings();
@@ -366,20 +366,10 @@ const SimpleCaptureModule = () => {
       filename: filename,
     };
 
-    // 严格根据用户设置决定是否显示保存对话框
-    if (settings.askForLocation) {
-      downloadOptions.saveAs = true;
-    } else {
-      // 用户明确不想询问位置，强制不显示对话框
-      downloadOptions.saveAs = false;
-
-      if (settings.useDefaultPath && settings.defaultPath) {
-        // 使用默认路径（相对于Downloads）
-        downloadOptions.filename = `${settings.defaultPath}/${filename}`;
-      } else {
-        // 直接下载到Downloads文件夹
-        downloadOptions.filename = filename;
-      }
+    // 始终显示保存对话框，使用记忆的路径作为默认位置
+    downloadOptions.saveAs = true;
+    if (settings.lastUsedPath && settings.lastUsedPath !== 'Downloads') {
+      downloadOptions.filename = `${settings.lastUsedPath}/${filename}`;
     }
 
     // 使用 Chrome downloads API
@@ -392,13 +382,23 @@ const SimpleCaptureModule = () => {
           if (results.length > 0) {
             const downloadedFile = results[0];
             if (downloadedFile.filename) {
-              // 提取目录路径
-              const pathParts = downloadedFile.filename.split(/[/\\]/);
+              // 提取相对于 Downloads 文件夹的路径
+              const absolutePath = downloadedFile.filename;
+              const pathParts = absolutePath.split(/[/\\]/);
               pathParts.pop(); // 移除文件名
-              const directoryPath = pathParts.join('/') || 'Downloads';
 
-              if (directoryPath && directoryPath !== 'Downloads') {
-                await downloadSettingsStorage.setLastUsedPath(directoryPath);
+              // 查找 Downloads 文件夹在路径中的位置
+              const downloadsIndex = pathParts.findIndex(part => part.toLowerCase() === 'downloads' || part === '下载');
+
+              let relativePath = '';
+              if (downloadsIndex !== -1 && downloadsIndex < pathParts.length - 1) {
+                // 提取 Downloads 之后的路径部分
+                relativePath = pathParts.slice(downloadsIndex + 1).join('/');
+              }
+
+              // 只有当有有效的相对路径时才保存
+              if (relativePath) {
+                await downloadSettingsStorage.setLastUsedPath(relativePath);
               }
             }
           }
@@ -416,8 +416,8 @@ const SimpleCaptureModule = () => {
     if (!markdownOutput) return;
 
     try {
-      const slug = extractSlugFromMarkdown(markdownOutput);
-      const filename = `${slug}.md`;
+      const title = extractTitleFromMarkdown(markdownOutput);
+      const filename = `${title}.md`;
 
       const blob = new Blob([markdownOutput], { type: 'text/markdown;charset=utf-8' });
       const url = URL.createObjectURL(blob);
@@ -435,23 +435,24 @@ const SimpleCaptureModule = () => {
     }
   };
 
-  const extractSlugFromMarkdown = (markdown: string): string => {
+  const extractTitleFromMarkdown = (markdown: string): string => {
     try {
-      // 匹配 frontmatter 中的 slug
+      // 匹配 frontmatter 中的 title
       const frontmatterMatch = markdown.match(/^---\n([\s\S]*?)\n---/);
       if (frontmatterMatch) {
         const frontmatter = frontmatterMatch[1];
-        const slugMatch = frontmatter.match(/^slug:\s*(.+)$/m);
-        if (slugMatch && slugMatch[1]) {
-          return slugMatch[1].trim();
+        const titleMatch = frontmatter.match(/^title:\s*(.+)$/m);
+        if (titleMatch && titleMatch[1]) {
+          // 移除可能的引号
+          return titleMatch[1].trim().replace(/^["']|["']$/g, '');
         }
       }
 
-      // 如果没有找到 slug，使用时间戳作为默认值
+      // 如果没有找到 title，使用时间戳作为默认值
       const timestamp = new Date().getTime();
       return `content-${timestamp}`;
     } catch (error) {
-      console.error('提取 slug 失败:', error);
+      console.error('提取 title 失败:', error);
       const timestamp = new Date().getTime();
       return `content-${timestamp}`;
     }
