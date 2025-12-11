@@ -1,20 +1,29 @@
 import { DO_UPDATE, DONE_UPDATE, LOCAL_RELOAD_SOCKET_URL } from '../consts.js';
 import MessageInterpreter from '../interpreter/index.js';
 
-const checkServerAvailability = async (url: string): Promise<boolean> => {
-  try {
-    const httpUrl = url.replace('ws://', 'http://').replace('wss://', 'https://');
-    const response = await fetch(httpUrl, {
-      method: 'HEAD',
-      mode: 'no-cors',
-      cache: 'no-cache',
-    });
-    return true;
-  } catch {
-    return false;
-  }
-};
-
+const checkServerAvailability = async (url: string): Promise<boolean> =>
+  // 直接尝试 WebSocket 连接，而不是用 HTTP HEAD 检查
+  // 因为 WebSocketServer 对 HTTP 请求会返回 426 Upgrade Required
+  new Promise(resolve => {
+    try {
+      const ws = new WebSocket(url);
+      const timeout = setTimeout(() => {
+        ws.close();
+        resolve(false);
+      }, 1000);
+      ws.onopen = () => {
+        clearTimeout(timeout);
+        ws.close();
+        resolve(true);
+      };
+      ws.onerror = () => {
+        clearTimeout(timeout);
+        resolve(false);
+      };
+    } catch {
+      resolve(false);
+    }
+  });
 export default async ({ id, onUpdate }: { id: string; onUpdate: () => void }) => {
   // Check if HMR server is available before attempting WebSocket connection
   const serverAvailable = await checkServerAvailability(LOCAL_RELOAD_SOCKET_URL);

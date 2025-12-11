@@ -51,6 +51,9 @@ importers:
       autoprefixer:
         specifier: ^10.4.21
         version: 10.4.21(postcss@8.5.3)
+      code-inspector-plugin:
+        specifier: https://dl.cloudsmith.io/signed/mark/code-inspector/npm/code-inspector-plugin/1.4.2/code-inspector-plugin-1.4.2.tgz?created=1765423062&expires=1765509462&signature=gAAAAABpOjfW1OtOP3OMW7AOPAls79CiGVBVKI_pFi_iyx7K68qvZBaaUg7qtTtp5P-hs3YhlbauXFWEuzag49afshfhKapgQG7VBIfQwK3uPJAXkG5fW1x_of5Y8sFS-EHAf_XjTZNu
+        version: https://dl.cloudsmith.io/signed/mark/code-inspector/npm/code-inspector-plugin/1.4.2/code-inspector-plugin-1.4.2.tgz?created=1765423062&expires=1765509462&signature=gAAAAABpOjfW1OtOP3OMW7AOPAls79CiGVBVKI_pFi_iyx7K68qvZBaaUg7qtTtp5P-hs3YhlbauXFWEuzag49afshfhKapgQG7VBIfQwK3uPJAXkG5fW1x_of5Y8sFS-EHAf_XjTZNu
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
@@ -610,13 +613,48 @@ packages:
     resolution: {integrity: sha512-cjQ7ZlQ0Mv3b47hABuTevyTuYN4i+loJKGeV9flcCgIK37cCXRh+L1bd3iBHlynerhQ7BhCkn2BPbQUL+rGqFg==}
     engines: {node: '>=6.9.0'}
 
+  '@babel/helper-string-parser@7.27.1':
+    resolution: {integrity: sha512-qMlSxKbpRlAridDExk92nSobyDdpPijUq2DW6oDnUqd0iOGxmQjyqhMIihI9+zv4LPyZdRje2cavWPbCbWm3eA==}
+    engines: {node: '>=6.9.0'}
+
   '@babel/helper-validator-identifier@7.27.1':
     resolution: {integrity: sha512-D2hP9eA+Sqx1kBZgzxZh0y1trbuU+JoDkiEwqhQ36nodYqJwyEIhPSdMNd7lOm/4io72luTPWH20Yda0xOuUow==}
     engines: {node: '>=6.9.0'}
 
+  '@babel/helper-validator-identifier@7.28.5':
+    resolution: {integrity: sha512-qSs4ifwzKJSV39ucNjsvc6WVHs6b7S03sOh2OcHF9UHfVPqWWALUsNUVzhSBiItjRZoLHx7nIarVjqKVusUZ1Q==}
+    engines: {node: '>=6.9.0'}
+
+  '@babel/parser@7.28.5':
+    resolution: {integrity: sha512-KKBU1VGYR7ORr3At5HAtUQ+TV3SzRCXmA/8OdDZiLDBIZxVyzXuztPjfLd3BV1PRAQGCMWWSHYhL0F8d5uHBDQ==}
+    engines: {node: '>=6.0.0'}
+    hasBin: true
+
   '@babel/runtime@7.27.1':
     resolution: {integrity: sha512-1x3D2xEk2fRo3PAhwQwu5UubzgiVWSXTBfWpVd2Mx2AzRqJuDJCsgaDVZ7HB5iGzDW1Hl1sWN2mFyKjmR9uAog==}
     engines: {node: '>=6.9.0'}
+
+  '@babel/types@7.28.5':
+    resolution: {integrity: sha512-qQ5m48eI/MFLQ5PxQj4PFaprjyCTLI37ElWMmNs0K8Lk3dVeOdNpB3ks8jc7yM5CDmVC73eMVk/trk3fgmrUpA==}
+    engines: {node: '>=6.9.0'}
+
+  '@code-inspector/core@1.4.2':
+    resolution: {integrity: sha512-6qHdMrGDciYe2L9JibJLDHB9pUdPSBk7IMt7vTQsh8UB5dZRhHVD1vnME+zloN/bP8AHLC/KTghsb+9McT06JA==}
+
+  '@code-inspector/esbuild@1.4.2':
+    resolution: {integrity: sha512-uC1lDCNtvrvOxsFIAVBSQEalStnNfs9axBYWe2Ors9L3GajAQtQUNy4GL5jQolzDrRJXfmhVu58g/kzrbzPmCQ==}
+
+  '@code-inspector/mako@1.4.2':
+    resolution: {integrity: sha512-kSoSF2pOt/kMXVwNJbQASJzZQkeuI6ruF7gjT0zxbfnTzmvDyAyEMPiaxKLr49+3IefzT+Beglq/U8MmEBpb8w==}
+
+  '@code-inspector/turbopack@1.4.2':
+    resolution: {integrity: sha512-Z4lZXr5zWpYA67DvA4M0i3vNF6j9Q5qjG0nNoCM2pDE+PNqza4zO2LYDMfwP2PwopbLEKltHOjaH/WnnY9m7Rw==}
+
+  '@code-inspector/vite@1.4.2':
+    resolution: {integrity: sha512-XOzUfeqyWPU55rXE1nIin0/zrtHfeZinWNozfZ426x+tw3a3OeXlk6bGFSmoZgY+Pbqq/v7dkMx8hqBbuaT4GA==}
+
+  '@code-inspector/webpack@1.4.2':
+    resolution: {integrity: sha512-py7iir+Nx6Tkj07m/K6W1IymPQtC+hVUCsQKed+U8L4KKI9H99pbqyFDcMBwGuGLgBis2TXAejQq7Fv6A6qTtg==}
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -1666,6 +1704,15 @@ packages:
   '@vitest/snapshot@2.1.9':
     resolution: {integrity: sha512-oBO82rEjsxLNJincVhLhaxxZdEtV0EFHMK5Kmx5sJ6H9L183dHECjiefOAdnqpIgT5eZwT04PoggUnW88vOBNQ==}
 
+  '@vue/compiler-core@3.5.25':
+    resolution: {integrity: sha512-vay5/oQJdsNHmliWoZfHPoVZZRmnSWhug0BYT34njkYTPqClh3DNWLkZNJBVSjsNMrg0CCrBfoKkjZQPM/QVUw==}
+
+  '@vue/compiler-dom@3.5.25':
+    resolution: {integrity: sha512-4We0OAcMZsKgYoGlMjzYvaoErltdFI2/25wqanuTu+S4gismOTRTBPi4IASOjxWdzIwrYSjnqONfKvuqkXzE2Q==}
+
+  '@vue/shared@3.5.25':
+    resolution: {integrity: sha512-AbOPdQQnAnzs58H2FrrDxYj/TJfmeS2jdfEEhgiKINy+bnOANmVizIEgq1r+C5zsbs6l1CCQxtcj71rwNQ4jWg==}
+
   '@wdio/cli@9.14.0':
     resolution: {integrity: sha512-bS7015C54gZMs0gZrCQPFes5CqoVGtwTzlSzJBy0HBx94E8AQw/6feH1FyN6asz4uyfifpUbdpq7Q/7CkaEnGA==}
     engines: {node: '>=18.20.0'}
@@ -2116,6 +2163,10 @@ packages:
   caniuse-lite@1.0.30001718:
     resolution: {integrity: sha512-AflseV1ahcSunK53NfEs9gFWgOEmzr0f+kaMFA4xiLZlr9Hzt7HxcSpIFcnNCUkz6R6dWKa54rUz3HUmI3nVcw==}
 
+  chalk@4.1.1:
+    resolution: {integrity: sha512-diHzdDKxcU+bAsUboHLPEDQiw0qEe0qd7SYUn3HgcFlWgbDcfLGswOHYeGrHKzG9z6UYf01d9VFMfZxPM1xZSg==}
+    engines: {node: '>=10'}
+
   chalk@4.1.2:
     resolution: {integrity: sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA==}
     engines: {node: '>=10'}
@@ -2180,6 +2231,10 @@ packages:
   clsx@2.1.1:
     resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
     engines: {node: '>=6'}
+
+  code-inspector-plugin@https://dl.cloudsmith.io/signed/mark/code-inspector/npm/code-inspector-plugin/1.4.2/code-inspector-plugin-1.4.2.tgz?created=1765423062&expires=1765509462&signature=gAAAAABpOjfW1OtOP3OMW7AOPAls79CiGVBVKI_pFi_iyx7K68qvZBaaUg7qtTtp5P-hs3YhlbauXFWEuzag49afshfhKapgQG7VBIfQwK3uPJAXkG5fW1x_of5Y8sFS-EHAf_XjTZNu:
+    resolution: {tarball: https://dl.cloudsmith.io/signed/mark/code-inspector/npm/code-inspector-plugin/1.4.2/code-inspector-plugin-1.4.2.tgz?created=1765423062&expires=1765509462&signature=gAAAAABpOjfW1OtOP3OMW7AOPAls79CiGVBVKI_pFi_iyx7K68qvZBaaUg7qtTtp5P-hs3YhlbauXFWEuzag49afshfhKapgQG7VBIfQwK3uPJAXkG5fW1x_of5Y8sFS-EHAf_XjTZNu}
+    version: 1.4.2
 
   color-convert@2.0.1:
     resolution: {integrity: sha512-RRECPsj7iu/xb5oKYcsFHSppFNnsj/52OVTRKb4zP5onXwVF3zVmmToNcOfGC+CRDpfK/U584fMg38ZHCaElKQ==}
@@ -3362,6 +3417,9 @@ packages:
     resolution: {integrity: sha512-MbjN408fEndfiQXbFQ1vnd+1NoLDsnQW41410oQBXiyXDMYH5z505juWa4KUE1LqxRC7DgOgZDbKLxHIwm27hA==}
     engines: {node: '>=0.10'}
 
+  launch-ide@1.2.0:
+    resolution: {integrity: sha512-7nXSPQOt3b2JT52Ge8jp4miFcY+nrUEZxNLWBzrEfjmByDTb9b5ytqMSwGhsNwY6Cntwop+6n7rWIFN0+S8PTw==}
+
   lazystream@1.0.1:
     resolution: {integrity: sha512-b94GiNHQNy6JNTrt5w6zNyffMrNkXZb3KTkCZJb2V1xaEGCk093vkZ2jk3tpaeP33/OiXC+WvK9AxUebnf5nbw==}
     engines: {node: '>= 0.6.3'}
@@ -3832,6 +3890,10 @@ packages:
   plimit-lit@1.6.1:
     resolution: {integrity: sha512-B7+VDyb8Tl6oMJT9oSO2CW8XC/T4UcJGrwOVoNGwOQsQYhlpfajmrMj5xeejqaASq3V/EqThyOeATEOMuSEXiA==}
     engines: {node: '>=12'}
+
+  portfinder@1.0.38:
+    resolution: {integrity: sha512-rEwq/ZHlJIKw++XtLAO8PPuOQA/zaPJOZJ37BVuN97nLpMJeuDVLVGRwbFoBgLudgdTMP2hdRJP++H+8QOA3vg==}
+    engines: {node: '>= 10.12'}
 
   possible-typed-array-names@1.1.0:
     resolution: {integrity: sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg==}
@@ -4954,9 +5016,64 @@ snapshots:
       js-tokens: 4.0.0
       picocolors: 1.1.1
 
+  '@babel/helper-string-parser@7.27.1': {}
+
   '@babel/helper-validator-identifier@7.27.1': {}
 
+  '@babel/helper-validator-identifier@7.28.5': {}
+
+  '@babel/parser@7.28.5':
+    dependencies:
+      '@babel/types': 7.28.5
+
   '@babel/runtime@7.27.1': {}
+
+  '@babel/types@7.28.5':
+    dependencies:
+      '@babel/helper-string-parser': 7.27.1
+      '@babel/helper-validator-identifier': 7.28.5
+
+  '@code-inspector/core@1.4.2':
+    dependencies:
+      '@vue/compiler-dom': 3.5.25
+      chalk: 4.1.2
+      dotenv: 16.5.0
+      launch-ide: 1.2.0
+      portfinder: 1.0.38
+    transitivePeerDependencies:
+      - supports-color
+
+  '@code-inspector/esbuild@1.4.2':
+    dependencies:
+      '@code-inspector/core': 1.4.2
+    transitivePeerDependencies:
+      - supports-color
+
+  '@code-inspector/mako@1.4.2':
+    dependencies:
+      '@code-inspector/core': 1.4.2
+    transitivePeerDependencies:
+      - supports-color
+
+  '@code-inspector/turbopack@1.4.2':
+    dependencies:
+      '@code-inspector/core': 1.4.2
+      '@code-inspector/webpack': 1.4.2
+    transitivePeerDependencies:
+      - supports-color
+
+  '@code-inspector/vite@1.4.2':
+    dependencies:
+      '@code-inspector/core': 1.4.2
+      chalk: 4.1.1
+    transitivePeerDependencies:
+      - supports-color
+
+  '@code-inspector/webpack@1.4.2':
+    dependencies:
+      '@code-inspector/core': 1.4.2
+    transitivePeerDependencies:
+      - supports-color
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
@@ -5907,6 +6024,21 @@ snapshots:
       magic-string: 0.30.17
       pathe: 1.1.2
 
+  '@vue/compiler-core@3.5.25':
+    dependencies:
+      '@babel/parser': 7.28.5
+      '@vue/shared': 3.5.25
+      entities: 4.5.0
+      estree-walker: 2.0.2
+      source-map-js: 1.2.1
+
+  '@vue/compiler-dom@3.5.25':
+    dependencies:
+      '@vue/compiler-core': 3.5.25
+      '@vue/shared': 3.5.25
+
+  '@vue/shared@3.5.25': {}
+
   '@wdio/cli@9.14.0':
     dependencies:
       '@types/node': 20.17.50
@@ -6528,6 +6660,11 @@ snapshots:
 
   caniuse-lite@1.0.30001718: {}
 
+  chalk@4.1.1:
+    dependencies:
+      ansi-styles: 4.3.0
+      supports-color: 7.2.0
+
   chalk@4.1.2:
     dependencies:
       ansi-styles: 4.3.0
@@ -6612,6 +6749,18 @@ snapshots:
     optional: true
 
   clsx@2.1.1: {}
+
+  code-inspector-plugin@https://dl.cloudsmith.io/signed/mark/code-inspector/npm/code-inspector-plugin/1.4.2/code-inspector-plugin-1.4.2.tgz?created=1765423062&expires=1765509462&signature=gAAAAABpOjfW1OtOP3OMW7AOPAls79CiGVBVKI_pFi_iyx7K68qvZBaaUg7qtTtp5P-hs3YhlbauXFWEuzag49afshfhKapgQG7VBIfQwK3uPJAXkG5fW1x_of5Y8sFS-EHAf_XjTZNu:
+    dependencies:
+      '@code-inspector/core': 1.4.2
+      '@code-inspector/esbuild': 1.4.2
+      '@code-inspector/mako': 1.4.2
+      '@code-inspector/turbopack': 1.4.2
+      '@code-inspector/vite': 1.4.2
+      '@code-inspector/webpack': 1.4.2
+      chalk: 4.1.1
+    transitivePeerDependencies:
+      - supports-color
 
   color-convert@2.0.1:
     dependencies:
@@ -8026,6 +8175,11 @@ snapshots:
     dependencies:
       language-subtag-registry: 0.3.23
 
+  launch-ide@1.2.0:
+    dependencies:
+      chalk: 4.1.2
+      dotenv: 16.5.0
+
   lazystream@1.0.1:
     dependencies:
       readable-stream: 2.3.8
@@ -8522,6 +8676,13 @@ snapshots:
   plimit-lit@1.6.1:
     dependencies:
       queue-lit: 1.5.2
+
+  portfinder@1.0.38:
+    dependencies:
+      async: 3.2.6
+      debug: 4.4.1(supports-color@8.1.1)
+    transitivePeerDependencies:
+      - supports-color
 
   possible-typed-array-names@1.1.0: {}
 
