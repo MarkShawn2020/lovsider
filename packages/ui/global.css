@@ -2,47 +2,104 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Lovpen Design Theme CSS Variables */
-/* 亮色主题（默认） */
-:root {
-  --color-primary: #D97757;
-  --color-text-main: #181818;
-  --color-text-faded: #87867F;
-  --color-background-main: #F9F9F7;
-  --color-background-dark: #141413;
-  --color-background-ivory-medium: #F0EEE6;
-  --color-background-oat: #F7F4EC;
-  --color-background-clay: #CC785C;
-  --color-background-faded: #3D3D3A;
-  --color-border-default: #87867F;
-  --color-swatch-slate-light: #87867F;
-  --color-swatch-cloud-light: #E8E6DC;
-  --color-swatch-fig: #B49FD8;
-  --color-swatch-olive: #C2C07D;
-  --color-swatch-cactus: #629A90;
-  --color-swatch-sky: #97B5D5;
-  --color-swatch-heather: #D2BEDF;
-}
+/* Lovpen Design Theme - Warm Academic Style */
+/* shadcn 语义化颜色变量 */
+@layer base {
+  :root {
+    /* 核心语义色（HSL 格式，不含 hsl()） */
+    --background: 48 14% 97%;        /* #F9F9F7 暖米色 */
+    --foreground: 0 0% 9%;           /* #181818 深炭灰 */
 
-/* 深色主题（温暖学术风格） */
-.dark {
-  --color-primary: #D97757;
-  --color-text-main: #F9F9F7;
-  --color-text-faded: #A8A7A0;
-  --color-background-main: #141413;
-  --color-background-dark: #0D0D0C;
-  --color-background-ivory-medium: #1E1E1C;
-  --color-background-oat: #252523;
-  --color-background-clay: #CC785C;
-  --color-background-faded: #3D3D3A;
-  --color-border-default: #3D3D3A;
-  --color-swatch-slate-light: #5A5A55;
-  --color-swatch-cloud-light: #2D2D2A;
-  --color-swatch-fig: #8B7AA8;
-  --color-swatch-olive: #9A9860;
-  --color-swatch-cactus: #4A7A70;
-  --color-swatch-sky: #7090B0;
-  --color-swatch-heather: #A090B0;
+    --card: 0 0% 100%;               /* #FFFFFF 白色卡片 */
+    --card-foreground: 0 0% 9%;      /* #181818 */
+
+    --primary: 16 60% 60%;           /* #CC785C 陶土色 */
+    --primary-foreground: 0 0% 100%; /* 白色 */
+
+    --secondary: 45 17% 91%;         /* #F0EEE6 象牙米色 */
+    --secondary-foreground: 0 0% 9%; /* #181818 */
+
+    --muted: 43 24% 95%;             /* #F7F4EC 燕麦色 */
+    --muted-foreground: 56 4% 51%;   /* #87867F 灰褐色 */
+
+    --accent: 45 17% 91%;            /* #F0EEE6 */
+    --accent-foreground: 0 0% 9%;    /* #181818 */
+
+    --destructive: 0 84% 60%;        /* 红色 */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 56 4% 51%;             /* #87867F */
+    --input: 45 10% 89%;             /* #E8E6DC */
+    --ring: 16 60% 60%;              /* 陶土色 */
+
+    --radius: 0.75rem;
+
+    /* 旧版兼容变量（逐步废弃） */
+    --color-primary: #D97757;
+    --color-text-main: #181818;
+    --color-text-faded: #87867F;
+    --color-background-main: #F9F9F7;
+    --color-background-dark: #141413;
+    --color-background-ivory-medium: #F0EEE6;
+    --color-background-oat: #F7F4EC;
+    --color-background-clay: #CC785C;
+    --color-background-faded: #3D3D3A;
+    --color-border-default: #87867F;
+    --color-swatch-slate-light: #87867F;
+    --color-swatch-cloud-light: #E8E6DC;
+    --color-swatch-fig: #B49FD8;
+    --color-swatch-olive: #C2C07D;
+    --color-swatch-cactus: #629A90;
+    --color-swatch-sky: #97B5D5;
+    --color-swatch-heather: #D2BEDF;
+  }
+
+  /* 深色主题（温暖学术风格） */
+  .dark {
+    --background: 60 4% 8%;          /* #141413 深暖灰 */
+    --foreground: 48 14% 97%;        /* #F9F9F7 */
+
+    --card: 60 4% 12%;               /* #1E1E1C */
+    --card-foreground: 48 14% 97%;   /* #F9F9F7 */
+
+    --primary: 16 60% 60%;           /* #CC785C 陶土色保持 */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 60 4% 15%;          /* #252523 */
+    --secondary-foreground: 48 14% 97%;
+
+    --muted: 60 4% 15%;              /* #252523 */
+    --muted-foreground: 50 3% 64%;   /* #A8A7A0 */
+
+    --accent: 60 4% 15%;
+    --accent-foreground: 48 14% 97%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 60 3% 24%;             /* #3D3D3A */
+    --input: 60 3% 18%;              /* #2D2D2A */
+    --ring: 16 60% 60%;
+
+    /* 旧版兼容变量 */
+    --color-primary: #D97757;
+    --color-text-main: #F9F9F7;
+    --color-text-faded: #A8A7A0;
+    --color-background-main: #141413;
+    --color-background-dark: #0D0D0C;
+    --color-background-ivory-medium: #1E1E1C;
+    --color-background-oat: #252523;
+    --color-background-clay: #CC785C;
+    --color-background-faded: #3D3D3A;
+    --color-border-default: #3D3D3A;
+    --color-swatch-slate-light: #5A5A55;
+    --color-swatch-cloud-light: #2D2D2A;
+    --color-swatch-fig: #8B7AA8;
+    --color-swatch-olive: #9A9860;
+    --color-swatch-cactus: #4A7A70;
+    --color-swatch-sky: #7090B0;
+    --color-swatch-heather: #A090B0;
+  }
 }
 
 /* Logo Styling */

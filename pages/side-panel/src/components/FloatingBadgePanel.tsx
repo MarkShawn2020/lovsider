@@ -1,4 +1,5 @@
 import { floatingBadgeStorage } from '@extension/storage';
+import { cn } from '@extension/ui';
 import { useState, useEffect } from 'react';
 import type { FloatingBadgeConfig } from '@extension/storage';
 
@@ -183,246 +184,235 @@ export const FloatingBadgePanel = ({ onClose }: { onClose: () => void }) => {
     }
   };
 
-  return (
-    <div className="border-border-default bg-background-main mb-3 rounded border p-3 dark:border-gray-600 dark:bg-gray-900">
-      <div className="mb-2 flex items-center justify-between">
-        <h4 className="text-sm font-medium">悬浮徽章设置</h4>
-        <button
-          onClick={onClose}
-          className="bg-background-ivory-medium text-text-faded hover:bg-swatch-cloud-light rounded px-2 py-1 text-xs dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600">
-          ✕
-        </button>
-      </div>
+  // 开关组件
+  const Toggle = ({ checked, onChange, label }: { checked: boolean; onChange: () => void; label: string }) => (
+    <div className="flex items-center justify-between py-2">
+      <span className="text-foreground text-sm">{label}</span>
+      <button
+        onClick={onChange}
+        className={cn('relative h-6 w-11 rounded-full transition-colors', checked ? 'bg-primary' : 'bg-input')}>
+        <span
+          className={cn(
+            'absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform',
+            checked && 'translate-x-5',
+          )}
+        />
+      </button>
+    </div>
+  );
 
-      {saveFeedback && (
-        <div className="mb-2 rounded bg-green-100 p-2 text-xs text-green-800 dark:bg-green-900/20 dark:text-green-300">
-          {saveFeedback}
+  // 选择器组件
+  const SelectField = ({
+    label,
+    value,
+    options,
+    onChange,
+  }: {
+    label: string;
+    value: string;
+    options: { value: string; label: string }[];
+    onChange: (v: string) => void;
+  }) => (
+    <div className="py-2">
+      <label className="text-muted-foreground mb-1.5 block text-sm">{label}</label>
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="border-input bg-background text-foreground focus:border-primary focus:ring-ring w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1">
+        {options.map(opt => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* 保存反馈 */}
+      {saveFeedback && <div className="bg-primary/10 text-primary rounded-lg px-3 py-2 text-sm">{saveFeedback}</div>}
+
+      {/* 主开关 */}
+      <Toggle checked={enabled} onChange={toggleEnabled} label="启用悬浮徽章" />
+
+      {/* 当前网站状态提示 */}
+      {enabled && currentHostname && blacklist.includes(currentHostname) && (
+        <div className="bg-destructive/10 flex items-center justify-between rounded-lg p-3">
+          <span className="text-destructive text-sm">当前网站已隐藏</span>
+          <button
+            onClick={() => removeFromBlacklist(currentHostname)}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-lg px-3 py-1 text-xs">
+            恢复显示
+          </button>
         </div>
       )}
 
-      <div className="space-y-3">
-        {/* 启用悬浮徽章 */}
-        <div className="flex items-center justify-between">
-          <label className="text-text-main text-sm dark:text-gray-300">启用悬浮徽章</label>
-          <input type="checkbox" checked={enabled} onChange={toggleEnabled} className="rounded" />
-        </div>
+      {/* 基础设置 */}
+      <div className="space-y-1">
+        <SelectField
+          label="初始位置"
+          value={config.position}
+          options={[
+            { value: 'left', label: '左侧' },
+            { value: 'right', label: '右侧' },
+            { value: 'top', label: '顶部' },
+            { value: 'bottom', label: '底部' },
+          ]}
+          onChange={v => updateConfig('position', v as any)}
+        />
 
-        {/* 当前网站状态提示 */}
-        {enabled && currentHostname && blacklist.includes(currentHostname) && (
-          <div className="flex items-center justify-between rounded bg-amber-50 p-2 dark:bg-amber-900/20">
-            <span className="text-xs text-amber-800 dark:text-amber-300">当前网站已隐藏</span>
-            <button
-              onClick={() => removeFromBlacklist(currentHostname)}
-              className="rounded bg-amber-600 px-2 py-1 text-xs text-white hover:bg-amber-700">
-              恢复显示
-            </button>
-          </div>
-        )}
+        <SelectField
+          label="徽章尺寸"
+          value={config.size}
+          options={[
+            { value: 'small', label: '小' },
+            { value: 'medium', label: '中' },
+            { value: 'large', label: '大' },
+          ]}
+          onChange={v => updateConfig('size', v as any)}
+        />
 
-        {/* 位置设置 */}
-        <div>
-          <label className="text-text-faded mb-1 block text-xs dark:text-gray-400">初始位置</label>
-          <select
-            value={config.position}
-            onChange={e => updateConfig('position', e.target.value as any)}
-            className="border-border-default dark:bg-background-dark w-full rounded border px-2 py-1 text-xs dark:border-gray-600">
-            <option value="left">左侧</option>
-            <option value="right">右侧</option>
-            <option value="top">顶部</option>
-            <option value="bottom">底部</option>
-          </select>
-        </div>
+        <SelectField
+          label="主题"
+          value={config.theme}
+          options={[
+            { value: 'auto', label: '自动' },
+            { value: 'light', label: '浅色' },
+            { value: 'dark', label: '深色' },
+          ]}
+          onChange={v => updateConfig('theme', v as any)}
+        />
+      </div>
 
-        {/* 尺寸设置 */}
-        <div>
-          <label className="text-text-faded mb-1 block text-xs dark:text-gray-400">徽章尺寸</label>
-          <select
-            value={config.size}
-            onChange={e => updateConfig('size', e.target.value as any)}
-            className="border-border-default dark:bg-background-dark w-full rounded border px-2 py-1 text-xs dark:border-gray-600">
-            <option value="small">小</option>
-            <option value="medium">中</option>
-            <option value="large">大</option>
-          </select>
-        </div>
-
-        {/* 主题设置 */}
-        <div>
-          <label className="text-text-faded mb-1 block text-xs dark:text-gray-400">主题</label>
-          <select
-            value={config.theme}
-            onChange={e => updateConfig('theme', e.target.value as any)}
-            className="border-border-default dark:bg-background-dark w-full rounded border px-2 py-1 text-xs dark:border-gray-600">
-            <option value="auto">自动</option>
-            <option value="light">浅色</option>
-            <option value="dark">深色</option>
-          </select>
-        </div>
-
-        {/* 显示工具提示 */}
-        <div className="flex items-center justify-between">
-          <label className="text-text-main text-sm dark:text-gray-300">显示工具提示</label>
-          <input
-            type="checkbox"
-            checked={config.showTooltip}
-            onChange={e => updateConfig('showTooltip', e.target.checked)}
-            className="rounded"
-          />
-        </div>
-
-        {/* 启用拖动 */}
-        <div className="flex items-center justify-between">
-          <label className="text-text-main text-sm dark:text-gray-300">启用拖动</label>
-          <input
-            type="checkbox"
-            checked={config.enableDragging}
-            onChange={e => updateConfig('enableDragging', e.target.checked)}
-            className="rounded"
-          />
-        </div>
-
-        {/* 仅垂直拖动 */}
+      {/* 行为设置 */}
+      <div className="border-border border-t pt-2">
+        <Toggle
+          checked={config.showTooltip}
+          onChange={() => updateConfig('showTooltip', !config.showTooltip)}
+          label="显示工具提示"
+        />
+        <Toggle
+          checked={config.enableDragging}
+          onChange={() => updateConfig('enableDragging', !config.enableDragging)}
+          label="启用拖动"
+        />
         {config.enableDragging && (
-          <div className="flex items-center justify-between">
-            <label className="text-text-main text-sm dark:text-gray-300">仅垂直拖动</label>
-            <input
-              type="checkbox"
-              checked={config.verticalDragOnly}
-              onChange={e => updateConfig('verticalDragOnly', e.target.checked)}
-              className="rounded"
-            />
+          <Toggle
+            checked={config.verticalDragOnly}
+            onChange={() => updateConfig('verticalDragOnly', !config.verticalDragOnly)}
+            label="仅垂直拖动"
+          />
+        )}
+        <Toggle
+          checked={config.enableSnapping}
+          onChange={() => updateConfig('enableSnapping', !config.enableSnapping)}
+          label="启用边缘吸附"
+        />
+        <Toggle
+          checked={config.autoHide}
+          onChange={() => updateConfig('autoHide', !config.autoHide)}
+          label="自动隐藏"
+        />
+      </div>
+
+      {/* 透明度滑块 */}
+      <div className="py-2">
+        <div className="mb-1.5 flex items-center justify-between">
+          <span className="text-muted-foreground text-sm">透明度</span>
+          <span className="text-foreground text-sm">{Math.round(config.opacity * 100)}%</span>
+        </div>
+        <input
+          type="range"
+          min="30"
+          max="100"
+          value={config.opacity * 100}
+          onChange={e => updateConfig('opacity', parseInt(e.target.value) / 100)}
+          className="bg-input accent-primary h-2 w-full cursor-pointer appearance-none rounded-lg"
+        />
+      </div>
+
+      {/* 网站管理 */}
+      <div className="border-border border-t pt-4">
+        <h4 className="text-foreground mb-3 font-medium">网站管理</h4>
+
+        <Toggle checked={useWhitelist} onChange={toggleUseWhitelist} label="使用白名单模式" />
+
+        {/* 域名输入 */}
+        <div className="mt-2 flex gap-2">
+          <input
+            type="text"
+            value={newDomain}
+            onChange={e => setNewDomain(e.target.value)}
+            placeholder="输入域名 (如: example.com)"
+            className="border-input bg-background text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-ring flex-1 rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1"
+          />
+          <button
+            onClick={getCurrentDomain}
+            className="bg-secondary hover:bg-secondary/80 rounded-lg px-3 py-2 text-sm"
+            title="使用当前网站">
+            📍
+          </button>
+        </div>
+
+        <button
+          onClick={useWhitelist ? addToWhitelist : addToBlacklist}
+          className="bg-primary text-primary-foreground hover:bg-primary/90 mt-2 w-full rounded-lg py-2 text-sm">
+          添加到{useWhitelist ? '白' : '黑'}名单
+        </button>
+
+        {/* 黑名单列表 */}
+        {!useWhitelist && blacklist.length > 0 && (
+          <div className="mt-3">
+            <label className="text-muted-foreground mb-1.5 block text-sm">黑名单</label>
+            <div className="space-y-1">
+              {blacklist.map(domain => (
+                <div key={domain} className="bg-secondary flex items-center justify-between rounded-lg px-3 py-2">
+                  <span className="text-foreground text-sm">{domain}</span>
+                  <button
+                    onClick={() => removeFromBlacklist(domain)}
+                    className="text-destructive hover:text-destructive/80 text-sm">
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
-        {/* 启用边缘吸附 */}
-        <div className="flex items-center justify-between">
-          <label className="text-text-main text-sm dark:text-gray-300">启用边缘吸附</label>
-          <input
-            type="checkbox"
-            checked={config.enableSnapping}
-            onChange={e => updateConfig('enableSnapping', e.target.checked)}
-            className="rounded"
-          />
-        </div>
-
-        {/* 自动隐藏 */}
-        <div className="flex items-center justify-between">
-          <label className="text-text-main text-sm dark:text-gray-300">自动隐藏</label>
-          <input
-            type="checkbox"
-            checked={config.autoHide}
-            onChange={e => updateConfig('autoHide', e.target.checked)}
-            className="rounded"
-          />
-        </div>
-
-        {/* 透明度 */}
-        <div>
-          <label className="text-text-faded mb-1 block text-xs dark:text-gray-400">
-            透明度: {Math.round(config.opacity * 100)}%
-          </label>
-          <input
-            type="range"
-            min="30"
-            max="100"
-            value={config.opacity * 100}
-            onChange={e => updateConfig('opacity', parseInt(e.target.value) / 100)}
-            className="w-full"
-          />
-        </div>
-
-        {/* 网站管理 */}
-        <div className="border-t pt-3">
-          <h5 className="mb-2 text-xs font-medium">网站管理</h5>
-
-          {/* 白名单模式 */}
-          <div className="mb-2 flex items-center justify-between">
-            <label className="text-text-main text-sm dark:text-gray-300">使用白名单模式</label>
-            <input type="checkbox" checked={useWhitelist} onChange={toggleUseWhitelist} className="rounded" />
-          </div>
-
-          {/* 域名输入 */}
-          <div className="mb-2 flex space-x-1">
-            <input
-              type="text"
-              value={newDomain}
-              onChange={e => setNewDomain(e.target.value)}
-              placeholder="输入域名 (如: example.com)"
-              className="border-border-default dark:bg-background-dark flex-1 rounded border px-2 py-1 text-xs dark:border-gray-600"
-            />
-            <button
-              onClick={getCurrentDomain}
-              className="bg-background-ivory-medium hover:bg-swatch-cloud-light rounded px-2 py-1 text-xs dark:bg-gray-700 dark:hover:bg-gray-600"
-              title="使用当前网站">
-              📍
-            </button>
-          </div>
-
-          <div className="flex space-x-1">
-            <button
-              onClick={useWhitelist ? addToWhitelist : addToBlacklist}
-              className="bg-primary hover:bg-background-clay flex-1 rounded px-2 py-1 text-xs text-white">
-              添加到{useWhitelist ? '白' : '黑'}名单
-            </button>
-          </div>
-
-          {/* 黑名单列表 */}
-          {!useWhitelist && blacklist.length > 0 && (
-            <div className="mt-2">
-              <label className="text-text-faded mb-1 block text-xs dark:text-gray-400">黑名单</label>
-              <div className="space-y-1">
-                {blacklist.map(domain => (
-                  <div
-                    key={domain}
-                    className="flex items-center justify-between rounded bg-gray-100 px-2 py-1 dark:bg-gray-800">
-                    <span className="text-xs">{domain}</span>
-                    <button
-                      onClick={() => removeFromBlacklist(domain)}
-                      className="text-xs text-red-500 hover:text-red-700">
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
+        {/* 白名单列表 */}
+        {useWhitelist && whitelist.length > 0 && (
+          <div className="mt-3">
+            <label className="text-muted-foreground mb-1.5 block text-sm">白名单</label>
+            <div className="space-y-1">
+              {whitelist.map(domain => (
+                <div key={domain} className="bg-secondary flex items-center justify-between rounded-lg px-3 py-2">
+                  <span className="text-foreground text-sm">{domain}</span>
+                  <button
+                    onClick={() => removeFromWhitelist(domain)}
+                    className="text-destructive hover:text-destructive/80 text-sm">
+                    ✕
+                  </button>
+                </div>
+              ))}
             </div>
-          )}
-
-          {/* 白名单列表 */}
-          {useWhitelist && whitelist.length > 0 && (
-            <div className="mt-2">
-              <label className="text-text-faded mb-1 block text-xs dark:text-gray-400">白名单</label>
-              <div className="space-y-1">
-                {whitelist.map(domain => (
-                  <div
-                    key={domain}
-                    className="flex items-center justify-between rounded bg-gray-100 px-2 py-1 dark:bg-gray-800">
-                    <span className="text-xs">{domain}</span>
-                    <button
-                      onClick={() => removeFromWhitelist(domain)}
-                      className="text-xs text-red-500 hover:text-red-700">
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* 说明 */}
-        <div className="bg-background-oat rounded p-2 text-xs text-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
-          <div className="mb-1 font-medium">💡 使用说明</div>
-          <div>
-            • 悬浮徽章会显示在每个网页上
-            <br />
-            • 点击徽章可快速打开侧边栏
-            <br />
-            • 可以垂直拖动徽章调整位置
-            <br />
-            • 黑名单模式：在所有网站显示，除了黑名单中的网站
-            <br />• 白名单模式：仅在白名单中的网站显示
           </div>
+        )}
+      </div>
+
+      {/* 使用说明 */}
+      <div className="bg-muted rounded-xl p-3">
+        <div className="mb-1.5 flex items-center gap-2">
+          <span>💡</span>
+          <span className="text-foreground text-sm font-medium">使用说明</span>
         </div>
+        <ul className="text-muted-foreground space-y-1 text-xs">
+          <li>• 悬浮徽章会显示在每个网页上</li>
+          <li>• 点击徽章可快速打开侧边栏</li>
+          <li>• 可以垂直拖动徽章调整位置</li>
+          <li>• 黑名单模式：除黑名单外所有网站显示</li>
+          <li>• 白名单模式：仅白名单中的网站显示</li>
+        </ul>
       </div>
     </div>
   );

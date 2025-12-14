@@ -5,12 +5,43 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: 'var(--color-primary)',
+        // shadcn 风格语义化颜色（推荐使用）
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        card: {
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
+        },
+        primary: {
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
+        },
+        secondary: {
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
+        },
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
+        },
+        accent: {
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
+        },
+        destructive: {
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
+        },
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+
+        // 旧版兼容（逐步废弃）
         text: {
           main: 'var(--color-text-main)',
           faded: 'var(--color-text-faded)',
         },
-        background: {
+        'background-legacy': {
           main: 'var(--color-background-main)',
           dark: 'var(--color-background-dark)',
           ivory: {
@@ -20,7 +51,7 @@ export default {
           clay: 'var(--color-background-clay)',
           faded: 'var(--color-background-faded)',
         },
-        border: {
+        'border-legacy': {
           default: 'var(--color-border-default)',
         },
         swatch: {
@@ -38,8 +69,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Fira Code', 'ui-old-sans-serif', 'system-ui-old', 'sans-serif'],
-        serif: ['ui-old-serif', 'Georgia', 'Cambria', '"Times New Roman"', 'Times', 'serif'],
+        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        serif: ['Georgia', 'Cambria', '"Times New Roman"', 'Times', 'serif'],
       },
       spacing: {
         text: '1rem',
@@ -51,9 +82,9 @@ export default {
         xxl: '6rem',
       },
       borderRadius: {
-        md: '0.75rem',
-        lg: '1.5rem',
-        full: '9999px',
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
       },
       boxShadow: {
         md: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',

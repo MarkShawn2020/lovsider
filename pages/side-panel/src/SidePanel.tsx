@@ -1,5 +1,4 @@
 import '@src/SidePanel.css';
-import { EdgeSnappingPanel } from './components/EdgeSnappingPanel';
 import { FloatingBadgePanel } from './components/FloatingBadgePanel';
 import { SitePresetsPanel } from './components/SitePresetsPanel';
 import { useStorage, withErrorBoundary, withSuspense, commandProcessor } from '@extension/shared';
@@ -8,7 +7,6 @@ import {
   domPathStorage,
   downloadSettingsStorage,
   sitePresetsStorage,
-  edgeSnappingStorage,
   floatingBadgeStorage,
 } from '@extension/storage';
 import { cn, ErrorDisplay, LoadingSpinner, Select } from '@extension/ui';
@@ -25,7 +23,6 @@ const DownloadSettingsPanel = ({ onClose }: { onClose: () => void }) => {
   });
 
   useEffect(() => {
-    // 加载当前设置
     const loadSettings = async () => {
       try {
         const currentSettings = await downloadSettingsStorage.getSettings();
@@ -36,18 +33,8 @@ const DownloadSettingsPanel = ({ onClose }: { onClose: () => void }) => {
     };
 
     loadSettings();
-
-    // 监听存储变化以实时更新
-    const handleStorageChange = () => {
-      loadSettings();
-    };
-
-    // 添加存储变化监听器
-    chrome.storage.onChanged.addListener(handleStorageChange);
-
-    return () => {
-      chrome.storage.onChanged.removeListener(handleStorageChange);
-    };
+    chrome.storage.onChanged.addListener(loadSettings);
+    return () => chrome.storage.onChanged.removeListener(loadSettings);
   }, []);
 
   const updateSetting = async (key: string, value: any) => {
@@ -60,75 +47,91 @@ const DownloadSettingsPanel = ({ onClose }: { onClose: () => void }) => {
     }
   };
 
+  // Toggle 组件
+  const Toggle = ({
+    checked,
+    onChange,
+    label,
+    disabled = false,
+  }: {
+    checked: boolean;
+    onChange: () => void;
+    label: string;
+    disabled?: boolean;
+  }) => (
+    <div className="flex items-center justify-between py-2">
+      <span className={cn('text-sm', disabled ? 'text-muted-foreground' : 'text-foreground')}>{label}</span>
+      <button
+        onClick={onChange}
+        disabled={disabled}
+        className={cn(
+          'relative h-6 w-11 rounded-full transition-colors',
+          checked ? 'bg-primary' : 'bg-input',
+          disabled && 'cursor-not-allowed opacity-50',
+        )}>
+        <span
+          className={cn(
+            'absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform',
+            checked && 'translate-x-5',
+          )}
+        />
+      </button>
+    </div>
+  );
+
   return (
-    <div className="border-border-default bg-background-main mb-3 rounded border p-3">
-      <div className="mb-2 flex items-center justify-between">
-        <h4 className="text-sm font-medium">下载设置</h4>
-        <button
-          onClick={onClose}
-          className="bg-background-ivory-medium text-text-faded hover:bg-swatch-cloud-light rounded px-2 py-1 text-xs">
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h4 className="text-foreground font-medium">下载设置</h4>
+        <button onClick={onClose} className="bg-secondary text-muted-foreground hover:bg-secondary/80 rounded-lg p-1.5">
           ✕
         </button>
       </div>
 
-      <div className="space-y-3">
-        {/* 是否询问位置 */}
-        <div className="flex items-center justify-between">
-          <label className="text-text-main text-sm">每次询问保存位置</label>
+      <Toggle
+        checked={settings.askForLocation}
+        onChange={() => updateSetting('askForLocation', !settings.askForLocation)}
+        label="每次询问保存位置"
+      />
+
+      <Toggle
+        checked={settings.useDefaultPath}
+        onChange={() => updateSetting('useDefaultPath', !settings.useDefaultPath)}
+        label="使用默认路径"
+        disabled={settings.askForLocation}
+      />
+
+      {settings.useDefaultPath && !settings.askForLocation && (
+        <div>
+          <label className="text-muted-foreground mb-1.5 block text-sm">默认下载路径</label>
           <input
-            type="checkbox"
-            checked={settings.askForLocation}
-            onChange={e => updateSetting('askForLocation', e.target.checked)}
-            className="rounded"
+            type="text"
+            value={settings.defaultPath}
+            onChange={e => updateSetting('defaultPath', e.target.value)}
+            placeholder="Downloads"
+            className="border-input bg-background text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-ring w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1"
           />
         </div>
+      )}
 
-        {/* 使用默认路径 */}
-        <div className="flex items-center justify-between">
-          <label className="text-text-main text-sm">使用默认路径</label>
-          <input
-            type="checkbox"
-            checked={settings.useDefaultPath}
-            disabled={settings.askForLocation}
-            onChange={e => updateSetting('useDefaultPath', e.target.checked)}
-            className="rounded disabled:opacity-50"
-          />
+      {settings.lastUsedPath && settings.lastUsedPath !== 'Downloads' && (
+        <div>
+          <label className="text-muted-foreground mb-1.5 block text-sm">最后使用的路径</label>
+          <div className="bg-muted text-foreground rounded-lg px-3 py-2 text-sm">{settings.lastUsedPath}</div>
         </div>
+      )}
 
-        {/* 默认路径输入 */}
-        {settings.useDefaultPath && !settings.askForLocation && (
-          <div>
-            <label className="text-text-faded mb-1 block text-xs">默认下载路径</label>
-            <input
-              type="text"
-              value={settings.defaultPath}
-              onChange={e => updateSetting('defaultPath', e.target.value)}
-              placeholder="Downloads"
-              className="border-border-default bg-background-main w-full rounded border px-2 py-1 text-xs"
-            />
+      {!settings.askForLocation && (
+        <div className="bg-muted rounded-xl p-3">
+          <div className="mb-1 flex items-center gap-2">
+            <span>⚠️</span>
+            <span className="text-foreground text-sm font-medium">注意</span>
           </div>
-        )}
-
-        {/* 最后使用的路径显示 */}
-        {settings.lastUsedPath && settings.lastUsedPath !== 'Downloads' && (
-          <div>
-            <label className="text-text-faded mb-1 block text-xs">最后使用的路径</label>
-            <div className="bg-background-ivory-medium text-text-main rounded px-2 py-1 text-xs">
-              {settings.lastUsedPath}
-            </div>
-          </div>
-        )}
-
-        {/* 下载说明 */}
-        {!settings.askForLocation && (
-          <div className="bg-background-oat text-text-main mt-2 rounded p-2 text-xs">
-            <div className="mb-1 font-medium">⚠️ 注意</div>
-            <div>
-              如果Chrome浏览器设置中开启了"下载前询问每个文件的保存位置"，仍然会显示保存对话框。这是浏览器级别的限制，扩展无法绕过。
-            </div>
-          </div>
-        )}
-      </div>
+          <p className="text-muted-foreground text-xs">
+            如果 Chrome 浏览器设置中开启了"下载前询问每个文件的保存位置"，仍然会显示保存对话框。这是浏览器级别的限制。
+          </p>
+        </div>
+      )}
     </div>
   );
 };
@@ -557,60 +560,71 @@ const SimpleCaptureModule = () => {
   };
 
   return (
-    <div className="flex h-full flex-col p-4">
-      <h2 className="theme-text-main mb-4 text-lg font-semibold">页面捕获</h2>
+    <div className="bg-background flex h-full flex-col overflow-hidden p-4">
+      {/* 页面标题 - 衬线体 */}
+      <h2 className="text-foreground mb-4 font-serif text-xl font-semibold">页面捕获</h2>
 
-      <div className="mb-4">
+      {/* 操作按钮区域 */}
+      <div className="mb-4 space-y-3">
+        {/* 主按钮组 - 智能选择在前 */}
         <div className="flex gap-2">
+          <button
+            onClick={smartSelect}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium">
+            <span>🤖</span>
+            <span>智能选择</span>
+          </button>
           {!isSelecting ? (
             <button
               onClick={startSelection}
-              className="bg-primary hover:bg-background-clay theme-btn-primary flex-1 rounded px-3 py-2 text-sm text-white">
-              🎯 开始选择元素
+              className="border-border bg-card text-card-foreground hover:bg-accent flex flex-1 items-center justify-center gap-2 rounded-lg border py-2.5 text-sm font-medium">
+              <span>🎯</span>
+              <span>手动选择</span>
             </button>
           ) : (
             <button
               onClick={stopSelection}
-              className="bg-background-clay hover:bg-primary theme-btn-clay flex-1 rounded px-3 py-2 text-sm text-white">
-              ⏹️ 停止选择
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium">
+              <span>⏹️</span>
+              <span>停止选择</span>
             </button>
           )}
           <button
-            onClick={smartSelect}
-            className="bg-swatch-cactus hover:bg-swatch-olive theme-btn-cactus flex-1 rounded px-3 py-2 text-sm text-white">
-            🤖 智能选择
-          </button>
-          <button
             onClick={() => setShowPresetsPanel(!showPresetsPanel)}
-            className="bg-background-ivory-medium hover:bg-swatch-cloud-light text-text-main flex-shrink-0 rounded p-2 text-sm"
+            className="bg-secondary hover:bg-secondary/80 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg text-lg"
             title="预设配置">
             ⚙️
           </button>
         </div>
+
+        {/* 预设配置面板 */}
+        {showPresetsPanel && (
+          <div className="border-border bg-card rounded-xl border p-4">
+            <SitePresetsPanel onClose={() => setShowPresetsPanel(false)} />
+          </div>
+        )}
       </div>
 
-      {/* 预设配置面板 */}
-      {showPresetsPanel && <SitePresetsPanel onClose={() => setShowPresetsPanel(false)} />}
-
-      {/* DOM路径显示 */}
+      {/* DOM路径卡片 */}
       {domPath && (
-        <div className="border-border-default mb-4 overflow-hidden rounded border p-3">
-          <div className="mb-2 flex items-start justify-between">
-            <h3 className="text-sm font-medium">DOM路径</h3>
-            <div className="flex flex-shrink-0 space-x-1">
+        <div className="border-border bg-card mb-4 rounded-xl border p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-card-foreground text-sm font-medium">DOM 路径</h3>
+            <div className="flex gap-1">
               <button
                 onClick={copyDomPath}
-                className={`rounded p-1.5 transition-all duration-200 ${
+                className={cn(
+                  'rounded-lg p-2 text-sm transition-colors',
                   domPathCopied
-                    ? 'bg-green-500 text-white'
-                    : 'bg-background-ivory-medium text-text-main hover:bg-swatch-cloud-light'
-                }`}
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-secondary text-foreground hover:bg-secondary/80',
+                )}
                 title={domPathCopied ? '已复制!' : '复制路径'}>
                 {domPathCopied ? '✓' : '📋'}
               </button>
               <button
                 onClick={startEditPath}
-                className="text-background-clay bg-background-oat hover:bg-swatch-cloud-light rounded p-1.5"
+                className="bg-secondary text-foreground hover:bg-secondary/80 rounded-lg p-2 text-sm"
                 title="编辑路径">
                 ✏️
               </button>
@@ -618,29 +632,27 @@ const SimpleCaptureModule = () => {
           </div>
 
           {!isEditingPath ? (
-            <code className="bg-background-ivory-medium text-text-main block break-all rounded p-2 font-mono text-xs">
-              {domPath}
-            </code>
+            <code className="bg-muted text-foreground block break-all rounded-lg p-3 font-mono text-xs">{domPath}</code>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <textarea
                 value={editPathValue}
                 onChange={e => setEditPathValue(e.target.value)}
-                className="border-border-default bg-background-main w-full rounded border p-2 font-mono text-xs"
+                className="border-input bg-background text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-ring w-full rounded-lg border p-3 font-mono text-xs focus:outline-none focus:ring-1"
                 rows={3}
                 placeholder="输入CSS选择器路径..."
               />
-              {pathError && <p className="text-background-clay text-xs">{pathError}</p>}
-              <div className="flex space-x-2">
+              {pathError && <p className="text-destructive text-xs">{pathError}</p>}
+              <div className="flex gap-2">
                 <button
                   onClick={saveEditPath}
-                  className="bg-swatch-cactus hover:bg-swatch-olive rounded px-3 py-1 text-xs text-white">
-                  ✓ 保存
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-4 py-2 text-xs">
+                  保存
                 </button>
                 <button
                   onClick={cancelEditPath}
-                  className="bg-background-faded rounded px-3 py-1 text-xs text-white hover:bg-gray-600">
-                  ✗ 取消
+                  className="bg-secondary text-foreground hover:bg-secondary/80 rounded-lg px-4 py-2 text-xs">
+                  取消
                 </button>
               </div>
             </div>
@@ -648,37 +660,40 @@ const SimpleCaptureModule = () => {
         </div>
       )}
 
-      <div className="flex-1 overflow-auto">
+      {/* 内容区域 */}
+      <div className="min-h-0 flex-1 overflow-hidden">
         {markdownOutput ? (
-          <div className="flex h-full flex-col">
-            <div className="mb-2 flex items-start justify-between">
-              <h3 className="text-sm font-medium">Markdown内容</h3>
-              <div className="flex flex-shrink-0 gap-1">
+          <div className="border-border bg-card flex h-full flex-col rounded-xl border">
+            {/* 标题栏 */}
+            <div className="border-border flex items-center justify-between border-b px-4 py-3">
+              <h3 className="text-card-foreground text-sm font-medium">Markdown 内容</h3>
+              <div className="flex gap-1">
                 <button
                   onClick={downloadMarkdown}
-                  className="bg-swatch-cactus/20 text-swatch-cactus hover:bg-swatch-cactus/30 rounded p-1.5"
+                  className="bg-primary/10 text-primary hover:bg-primary/20 rounded-lg p-2 text-sm"
                   title="下载">
                   📥
                 </button>
                 <button
                   onClick={() => setShowDownloadSettings(!showDownloadSettings)}
-                  className="text-background-clay bg-background-oat hover:bg-swatch-cloud-light rounded p-1.5"
+                  className="bg-secondary text-foreground hover:bg-secondary/80 rounded-lg p-2 text-sm"
                   title="下载设置">
                   ⚙️
                 </button>
                 <button
                   onClick={copyToClipboard}
-                  className={`rounded p-1.5 transition-all duration-200 ${
+                  className={cn(
+                    'rounded-lg p-2 text-sm transition-colors',
                     markdownCopied
-                      ? 'bg-green-500 text-white'
-                      : 'bg-background-ivory-medium text-text-main hover:bg-swatch-cloud-light'
-                  }`}
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-secondary text-foreground hover:bg-secondary/80',
+                  )}
                   title={markdownCopied ? '已复制!' : '复制'}>
                   {markdownCopied ? '✓' : '📋'}
                 </button>
                 <button
                   onClick={clearContent}
-                  className="bg-background-clay/20 text-background-clay hover:bg-background-clay/30 rounded p-1.5"
+                  className="bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg p-2 text-sm"
                   title="清空">
                   🗑️
                 </button>
@@ -686,16 +701,22 @@ const SimpleCaptureModule = () => {
             </div>
 
             {/* 下载设置面板 */}
-            {showDownloadSettings && <DownloadSettingsPanel onClose={() => setShowDownloadSettings(false)} />}
+            {showDownloadSettings && (
+              <div className="border-border border-b p-4">
+                <DownloadSettingsPanel onClose={() => setShowDownloadSettings(false)} />
+              </div>
+            )}
 
-            <pre className="bg-background-ivory-medium flex-1 overflow-auto whitespace-pre-wrap break-words rounded p-4 font-mono text-xs">
+            {/* 内容预览 */}
+            <pre className="bg-muted text-foreground flex-1 overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs">
               {markdownOutput}
             </pre>
           </div>
         ) : (
-          <div className="text-text-faded py-8 text-center">
-            <div className="mb-2 text-4xl">📄</div>
-            <p>选择网页元素来捕获内容</p>
+          <div className="bg-muted flex h-full flex-col items-center justify-center rounded-xl py-12">
+            <div className="mb-3 text-5xl">📄</div>
+            <p className="text-foreground mb-1 font-medium">准备捕获内容</p>
+            <p className="text-muted-foreground text-sm">点击上方按钮选择网页元素</p>
           </div>
         )}
       </div>
@@ -706,42 +727,49 @@ const SimpleCaptureModule = () => {
 // 设置模块
 const ToolsModule = () => {
   const [showFloatingBadgePanel, setShowFloatingBadgePanel] = useState(false);
-  const [showEdgeSnappingPanel, setShowEdgeSnappingPanel] = useState(false);
 
   return (
-    <div className="flex h-full flex-col p-4">
-      <h2 className="theme-text-main mb-4 text-lg font-semibold">设置</h2>
+    <div className="bg-background flex h-full flex-col overflow-y-auto p-4">
+      {/* 页面标题 - 衬线体 */}
+      <h2 className="text-foreground mb-6 font-serif text-xl font-semibold">设置</h2>
 
-      {/* 悬浮徽章设置 */}
-      <div className="mb-3">
-        <button
-          onClick={() => setShowFloatingBadgePanel(!showFloatingBadgePanel)}
-          className="bg-background-ivory-medium hover:bg-swatch-cloud-light text-text-main mb-2 w-full rounded px-3 py-2 text-left text-sm">
-          <span className="mr-2">🎯</span>
-          悬浮徽章设置
-        </button>
-        {showFloatingBadgePanel && <FloatingBadgePanel onClose={() => setShowFloatingBadgePanel(false)} />}
-      </div>
+      {/* 设置卡片区域 */}
+      <div className="space-y-4">
+        {/* 悬浮徽章设置卡片 */}
+        <div className="border-border bg-card rounded-xl border p-4">
+          <button
+            onClick={() => setShowFloatingBadgePanel(!showFloatingBadgePanel)}
+            className="flex w-full items-center justify-between text-left">
+            <div className="flex items-center gap-3">
+              <span className="bg-secondary flex h-10 w-10 items-center justify-center rounded-lg text-lg">🎯</span>
+              <div>
+                <h3 className="text-card-foreground font-medium">悬浮徽章</h3>
+                <p className="text-muted-foreground text-sm">配置页面悬浮按钮</p>
+              </div>
+            </div>
+            <span className={cn('text-muted-foreground transition-transform', showFloatingBadgePanel && 'rotate-180')}>
+              ▼
+            </span>
+          </button>
 
-      {/* 边缘吸附设置 */}
-      <div className="mb-3">
-        <button
-          onClick={() => setShowEdgeSnappingPanel(!showEdgeSnappingPanel)}
-          className="bg-background-ivory-medium hover:bg-swatch-cloud-light text-text-main mb-2 w-full rounded px-3 py-2 text-left text-sm">
-          <span className="mr-2">🧲</span>
-          边缘吸附设置
-        </button>
-        {showEdgeSnappingPanel && <EdgeSnappingPanel onClose={() => setShowEdgeSnappingPanel(false)} />}
-      </div>
+          {/* 展开的设置面板 */}
+          {showFloatingBadgePanel && (
+            <div className="border-border mt-4 border-t pt-4">
+              <FloatingBadgePanel onClose={() => setShowFloatingBadgePanel(false)} />
+            </div>
+          )}
+        </div>
 
-      {/* 更多工具 */}
-      <div className="bg-background-oat text-text-main rounded p-3 text-sm">
-        <div className="mb-1 font-medium">💡 提示</div>
-        <div>
-          • 悬浮徽章可以让您在任何页面快速打开侧边栏
-          <br />
-          • 边缘吸附功能让浮动元素自动贴合浏览器边缘
-          <br />• 更多工具功能正在开发中...
+        {/* 提示信息卡片 */}
+        <div className="bg-muted rounded-xl p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="text-lg">💡</span>
+            <span className="text-foreground font-medium">使用提示</span>
+          </div>
+          <ul className="text-muted-foreground space-y-1 text-sm">
+            <li>• 悬浮徽章可在任何页面快速打开侧边栏</li>
+            <li>• 更多设置功能正在开发中...</li>
+          </ul>
         </div>
       </div>
     </div>
@@ -754,7 +782,6 @@ const DeveloperModule = () => {
     [],
   );
   const [isExecuting, setIsExecuting] = useState(false);
-  const [showEdgeSnappingPanel, setShowEdgeSnappingPanel] = useState(false);
 
   // 执行命令
   const executeCommand = async () => {
@@ -993,18 +1020,7 @@ const DeveloperModule = () => {
 
   return (
     <div className="flex h-full flex-col p-4">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="theme-text-main text-lg font-semibold">开发者工具</h2>
-        <button
-          onClick={() => setShowEdgeSnappingPanel(!showEdgeSnappingPanel)}
-          className="bg-background-ivory-medium hover:bg-swatch-cloud-light text-text-main rounded px-3 py-1.5 text-sm"
-          title="边缘吸附设置">
-          🧲 边缘吸附
-        </button>
-      </div>
-
-      {/* 边缘吸附设置面板 */}
-      {showEdgeSnappingPanel && <EdgeSnappingPanel onClose={() => setShowEdgeSnappingPanel(false)} />}
+      <h2 className="theme-text-main mb-4 text-lg font-semibold">开发者工具</h2>
 
       {/* 命令输入区域 */}
       <div className="mb-4">
