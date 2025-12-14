@@ -145,7 +145,6 @@ const SimpleCaptureModule = () => {
   const [editPathValue, setEditPathValue] = useState('');
   const [pathError, setPathError] = useState('');
   const [currentUrl, setCurrentUrl] = useState('');
-  const [showDownloadSettings, setShowDownloadSettings] = useState(false);
   const [showPresetsPanel, setShowPresetsPanel] = useState(false);
   const [domPathCopied, setDomPathCopied] = useState(false);
   const [markdownCopied, setMarkdownCopied] = useState(false);
@@ -675,12 +674,6 @@ const SimpleCaptureModule = () => {
                   📥
                 </button>
                 <button
-                  onClick={() => setShowDownloadSettings(!showDownloadSettings)}
-                  className="bg-secondary text-foreground hover:bg-secondary/80 rounded-lg p-2 text-sm"
-                  title="下载设置">
-                  ⚙️
-                </button>
-                <button
                   onClick={copyToClipboard}
                   className={cn(
                     'rounded-lg p-2 text-sm transition-colors',
@@ -699,13 +692,6 @@ const SimpleCaptureModule = () => {
                 </button>
               </div>
             </div>
-
-            {/* 下载设置面板 */}
-            {showDownloadSettings && (
-              <div className="border-border border-b p-4">
-                <DownloadSettingsPanel onClose={() => setShowDownloadSettings(false)} />
-              </div>
-            )}
 
             {/* 内容预览 */}
             <pre className="bg-muted text-foreground flex-1 overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs">
@@ -727,6 +713,7 @@ const SimpleCaptureModule = () => {
 // 设置模块
 const ToolsModule = () => {
   const [showFloatingBadgePanel, setShowFloatingBadgePanel] = useState(false);
+  const [showDownloadSettingsPanel, setShowDownloadSettingsPanel] = useState(false);
 
   return (
     <div className="bg-background flex h-full flex-col overflow-y-auto p-4">
@@ -760,6 +747,32 @@ const ToolsModule = () => {
           )}
         </div>
 
+        {/* 下载设置卡片 */}
+        <div className="border-border bg-card rounded-xl border p-4">
+          <button
+            onClick={() => setShowDownloadSettingsPanel(!showDownloadSettingsPanel)}
+            className="flex w-full items-center justify-between text-left">
+            <div className="flex items-center gap-3">
+              <span className="bg-secondary flex h-10 w-10 items-center justify-center rounded-lg text-lg">📥</span>
+              <div>
+                <h3 className="text-card-foreground font-medium">下载设置</h3>
+                <p className="text-muted-foreground text-sm">配置文件下载行为</p>
+              </div>
+            </div>
+            <span
+              className={cn('text-muted-foreground transition-transform', showDownloadSettingsPanel && 'rotate-180')}>
+              ▼
+            </span>
+          </button>
+
+          {/* 展开的设置面板 */}
+          {showDownloadSettingsPanel && (
+            <div className="border-border mt-4 border-t pt-4">
+              <DownloadSettingsPanel onClose={() => setShowDownloadSettingsPanel(false)} />
+            </div>
+          )}
+        </div>
+
         {/* 提示信息卡片 */}
         <div className="bg-muted rounded-xl p-4">
           <div className="mb-2 flex items-center gap-2">
@@ -768,7 +781,7 @@ const ToolsModule = () => {
           </div>
           <ul className="text-muted-foreground space-y-1 text-sm">
             <li>• 悬浮徽章可在任何页面快速打开侧边栏</li>
-            <li>• 更多设置功能正在开发中...</li>
+            <li>• 下载设置可控制文件保存位置</li>
           </ul>
         </div>
       </div>
