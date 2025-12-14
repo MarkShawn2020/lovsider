@@ -1,39 +1,40 @@
 import type { Config } from 'tailwindcss';
 
 export default {
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        primary: '#D97757',
+        primary: 'var(--color-primary)',
         text: {
-          main: '#181818',
-          faded: '#87867F',
+          main: 'var(--color-text-main)',
+          faded: 'var(--color-text-faded)',
         },
         background: {
-          main: '#F9F9F7',
-          dark: '#141413',
+          main: 'var(--color-background-main)',
+          dark: 'var(--color-background-dark)',
           ivory: {
-            medium: '#F0EEE6',
+            medium: 'var(--color-background-ivory-medium)',
           },
-          oat: '#F7F4EC',
-          clay: '#CC785C',
-          faded: '#3D3D3A',
+          oat: 'var(--color-background-oat)',
+          clay: 'var(--color-background-clay)',
+          faded: 'var(--color-background-faded)',
         },
         border: {
-          default: '#87867F',
+          default: 'var(--color-border-default)',
         },
         swatch: {
           slate: {
-            light: '#87867F',
+            light: 'var(--color-swatch-slate-light)',
           },
           cloud: {
-            light: '#E8E6DC',
+            light: 'var(--color-swatch-cloud-light)',
           },
-          fig: '#B49FD8',
-          olive: '#C2C07D',
-          cactus: '#629A90',
-          sky: '#97B5D5',
-          heather: '#D2BEDF',
+          fig: 'var(--color-swatch-fig)',
+          olive: 'var(--color-swatch-olive)',
+          cactus: 'var(--color-swatch-cactus)',
+          sky: 'var(--color-swatch-sky)',
+          heather: 'var(--color-swatch-heather)',
         },
       },
       fontFamily: {

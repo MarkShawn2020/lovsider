@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 /* Lovpen Design Theme CSS Variables */
+/* 亮色主题（默认） */
 :root {
   --color-primary: #D97757;
   --color-text-main: #181818;
@@ -21,6 +22,27 @@
   --color-swatch-cactus: #629A90;
   --color-swatch-sky: #97B5D5;
   --color-swatch-heather: #D2BEDF;
+}
+
+/* 深色主题（温暖学术风格） */
+.dark {
+  --color-primary: #D97757;
+  --color-text-main: #F9F9F7;
+  --color-text-faded: #A8A7A0;
+  --color-background-main: #141413;
+  --color-background-dark: #0D0D0C;
+  --color-background-ivory-medium: #1E1E1C;
+  --color-background-oat: #252523;
+  --color-background-clay: #CC785C;
+  --color-background-faded: #3D3D3A;
+  --color-border-default: #3D3D3A;
+  --color-swatch-slate-light: #5A5A55;
+  --color-swatch-cloud-light: #2D2D2A;
+  --color-swatch-fig: #8B7AA8;
+  --color-swatch-olive: #9A9860;
+  --color-swatch-cactus: #4A7A70;
+  --color-swatch-sky: #7090B0;
+  --color-swatch-heather: #A090B0;
 }
 
 /* Logo Styling */

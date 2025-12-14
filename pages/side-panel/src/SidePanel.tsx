@@ -62,12 +62,12 @@ const DownloadSettingsPanel = ({ onClose }: { onClose: () => void }) => {
   };
 
   return (
-    <div className="border-border-default bg-background-main mb-3 rounded border p-3 dark:border-gray-600 dark:bg-gray-900">
+    <div className="border-border-default bg-background-main mb-3 rounded border p-3">
       <div className="mb-2 flex items-center justify-between">
         <h4 className="text-sm font-medium">下载设置</h4>
         <button
           onClick={onClose}
-          className="bg-background-ivory-medium text-text-faded hover:bg-swatch-cloud-light rounded px-2 py-1 text-xs dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600">
+          className="bg-background-ivory-medium text-text-faded hover:bg-swatch-cloud-light rounded px-2 py-1 text-xs">
           ✕
         </button>
       </div>
@@ -75,7 +75,7 @@ const DownloadSettingsPanel = ({ onClose }: { onClose: () => void }) => {
       <div className="space-y-3">
         {/* 是否询问位置 */}
         <div className="flex items-center justify-between">
-          <label className="text-text-main text-sm dark:text-gray-300">每次询问保存位置</label>
+          <label className="text-text-main text-sm">每次询问保存位置</label>
           <input
             type="checkbox"
             checked={settings.askForLocation}
@@ -86,7 +86,7 @@ const DownloadSettingsPanel = ({ onClose }: { onClose: () => void }) => {
 
         {/* 使用默认路径 */}
         <div className="flex items-center justify-between">
-          <label className="text-text-main text-sm dark:text-gray-300">使用默认路径</label>
+          <label className="text-text-main text-sm">使用默认路径</label>
           <input
             type="checkbox"
             checked={settings.useDefaultPath}
@@ -99,13 +99,13 @@ const DownloadSettingsPanel = ({ onClose }: { onClose: () => void }) => {
         {/* 默认路径输入 */}
         {settings.useDefaultPath && !settings.askForLocation && (
           <div>
-            <label className="text-text-faded mb-1 block text-xs dark:text-gray-400">默认下载路径</label>
+            <label className="text-text-faded mb-1 block text-xs">默认下载路径</label>
             <input
               type="text"
               value={settings.defaultPath}
               onChange={e => updateSetting('defaultPath', e.target.value)}
               placeholder="Downloads"
-              className="border-border-default dark:bg-background-dark w-full rounded border px-2 py-1 text-xs dark:border-gray-600"
+              className="border-border-default bg-background-main w-full rounded border px-2 py-1 text-xs"
             />
           </div>
         )}
@@ -113,8 +113,8 @@ const DownloadSettingsPanel = ({ onClose }: { onClose: () => void }) => {
         {/* 最后使用的路径显示 */}
         {settings.lastUsedPath && settings.lastUsedPath !== 'Downloads' && (
           <div>
-            <label className="text-text-faded mb-1 block text-xs dark:text-gray-400">最后使用的路径</label>
-            <div className="bg-background-ivory-medium text-text-main dark:bg-background-dark rounded px-2 py-1 text-xs dark:text-gray-300">
+            <label className="text-text-faded mb-1 block text-xs">最后使用的路径</label>
+            <div className="bg-background-ivory-medium text-text-main rounded px-2 py-1 text-xs">
               {settings.lastUsedPath}
             </div>
           </div>
@@ -122,7 +122,7 @@ const DownloadSettingsPanel = ({ onClose }: { onClose: () => void }) => {
 
         {/* 下载说明 */}
         {!settings.askForLocation && (
-          <div className="bg-background-oat text-text-main mt-2 rounded p-2 text-xs dark:bg-yellow-900/20 dark:text-yellow-300">
+          <div className="bg-background-oat text-text-main mt-2 rounded p-2 text-xs">
             <div className="mb-1 font-medium">⚠️ 注意</div>
             <div>
               如果Chrome浏览器设置中开启了"下载前询问每个文件的保存位置"，仍然会显示保存对话框。这是浏览器级别的限制，扩展无法绕过。
@@ -583,7 +583,7 @@ const SimpleCaptureModule = () => {
           </button>
           <button
             onClick={() => setShowPresetsPanel(!showPresetsPanel)}
-            className="bg-background-ivory-medium hover:bg-swatch-cloud-light text-text-main flex-shrink-0 rounded p-2 text-sm dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+            className="bg-background-ivory-medium hover:bg-swatch-cloud-light text-text-main flex-shrink-0 rounded p-2 text-sm"
             title="预设配置">
             ⚙️
           </button>
@@ -595,7 +595,7 @@ const SimpleCaptureModule = () => {
 
       {/* DOM路径显示 */}
       {domPath && (
-        <div className="border-border-default mb-4 overflow-hidden rounded border p-3 dark:border-gray-600">
+        <div className="border-border-default mb-4 overflow-hidden rounded border p-3">
           <div className="mb-2 flex items-start justify-between">
             <h3 className="text-sm font-medium">DOM路径</h3>
             <div className="flex flex-shrink-0 space-x-1">
@@ -604,14 +604,14 @@ const SimpleCaptureModule = () => {
                 className={`rounded p-1.5 transition-all duration-200 ${
                   domPathCopied
                     ? 'bg-green-500 text-white'
-                    : 'bg-background-ivory-medium text-text-main hover:bg-swatch-cloud-light dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                    : 'bg-background-ivory-medium text-text-main hover:bg-swatch-cloud-light'
                 }`}
                 title={domPathCopied ? '已复制!' : '复制路径'}>
                 {domPathCopied ? '✓' : '📋'}
               </button>
               <button
                 onClick={startEditPath}
-                className="text-background-clay rounded bg-blue-100 p-1.5 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800"
+                className="text-background-clay bg-background-oat hover:bg-swatch-cloud-light rounded p-1.5"
                 title="编辑路径">
                 ✏️
               </button>
@@ -619,7 +619,7 @@ const SimpleCaptureModule = () => {
           </div>
 
           {!isEditingPath ? (
-            <code className="bg-background-ivory-medium text-text-main dark:bg-background-dark block break-all rounded p-2 font-mono text-xs dark:text-gray-300">
+            <code className="bg-background-ivory-medium text-text-main block break-all rounded p-2 font-mono text-xs">
               {domPath}
             </code>
           ) : (
@@ -627,11 +627,11 @@ const SimpleCaptureModule = () => {
               <textarea
                 value={editPathValue}
                 onChange={e => setEditPathValue(e.target.value)}
-                className="border-border-default dark:bg-background-dark w-full rounded border p-2 font-mono text-xs dark:border-gray-600"
+                className="border-border-default bg-background-main w-full rounded border p-2 font-mono text-xs"
                 rows={3}
                 placeholder="输入CSS选择器路径..."
               />
-              {pathError && <p className="text-background-clay dark:text-background-clay text-xs">{pathError}</p>}
+              {pathError && <p className="text-background-clay text-xs">{pathError}</p>}
               <div className="flex space-x-2">
                 <button
                   onClick={saveEditPath}
@@ -657,13 +657,13 @@ const SimpleCaptureModule = () => {
               <div className="flex flex-shrink-0 gap-1">
                 <button
                   onClick={downloadMarkdown}
-                  className="bg-swatch-cactus/20 text-swatch-cactus hover:bg-swatch-cactus/30 rounded p-1.5 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800"
+                  className="bg-swatch-cactus/20 text-swatch-cactus hover:bg-swatch-cactus/30 rounded p-1.5"
                   title="下载">
                   📥
                 </button>
                 <button
                   onClick={() => setShowDownloadSettings(!showDownloadSettings)}
-                  className="text-background-clay rounded bg-blue-100 p-1.5 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800"
+                  className="text-background-clay bg-background-oat hover:bg-swatch-cloud-light rounded p-1.5"
                   title="下载设置">
                   ⚙️
                 </button>
@@ -672,14 +672,14 @@ const SimpleCaptureModule = () => {
                   className={`rounded p-1.5 transition-all duration-200 ${
                     markdownCopied
                       ? 'bg-green-500 text-white'
-                      : 'bg-background-ivory-medium text-text-main hover:bg-swatch-cloud-light dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                      : 'bg-background-ivory-medium text-text-main hover:bg-swatch-cloud-light'
                   }`}
                   title={markdownCopied ? '已复制!' : '复制'}>
                   {markdownCopied ? '✓' : '📋'}
                 </button>
                 <button
                   onClick={clearContent}
-                  className="bg-background-clay/20 text-background-clay hover:bg-background-clay/30 rounded p-1.5 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800"
+                  className="bg-background-clay/20 text-background-clay hover:bg-background-clay/30 rounded p-1.5"
                   title="清空">
                   🗑️
                 </button>
@@ -689,7 +689,7 @@ const SimpleCaptureModule = () => {
             {/* 下载设置面板 */}
             {showDownloadSettings && <DownloadSettingsPanel onClose={() => setShowDownloadSettings(false)} />}
 
-            <pre className="bg-background-ivory-medium dark:bg-background-dark flex-1 overflow-auto whitespace-pre-wrap break-words rounded p-4 font-mono text-xs">
+            <pre className="bg-background-ivory-medium flex-1 overflow-auto whitespace-pre-wrap break-words rounded p-4 font-mono text-xs">
               {markdownOutput}
             </pre>
           </div>
@@ -757,8 +757,8 @@ const SimpleTextModule = () => {
               className={cn(
                 'rounded border p-2 text-left transition-colors',
                 selectedTool === tool.id
-                  ? 'border-primary bg-background-oat dark:bg-blue-900/20'
-                  : 'border-border-default hover:border-border-default dark:border-gray-600',
+                  ? 'border-primary bg-background-oat'
+                  : 'border-border-default hover:border-border-default',
               )}
               title={tool.desc}>
               <span className="text-sm">
@@ -779,7 +779,7 @@ const SimpleTextModule = () => {
           value={inputText}
           onChange={e => setInputText(e.target.value)}
           placeholder="在此输入或粘贴文本..."
-          className="border-border-default bg-background-main dark:bg-background-dark h-20 w-full resize-none rounded border p-2 dark:border-gray-600"
+          className="border-border-default bg-background-main h-20 w-full resize-none rounded border p-2"
         />
         <button
           onClick={processText}
@@ -794,9 +794,7 @@ const SimpleTextModule = () => {
         {outputText ? (
           <div className="flex h-full flex-col">
             <h3 className="theme-text-main mb-2 text-sm font-medium">处理结果</h3>
-            <pre className="bg-background-ivory-medium dark:bg-background-dark flex-1 overflow-auto rounded p-3 text-sm">
-              {outputText}
-            </pre>
+            <pre className="bg-background-ivory-medium flex-1 overflow-auto rounded p-3 text-sm">{outputText}</pre>
           </div>
         ) : (
           <div className="text-text-faded py-8 text-center">
@@ -985,22 +983,20 @@ const CopyTitleModule = () => {
       <h2 className="theme-text-main mb-4 text-lg font-semibold">复制标题</h2>
 
       {/* 当前页面信息 */}
-      <div className="border-border-default dark:bg-background-dark mb-4 rounded border bg-gray-50 p-3 dark:border-gray-600">
+      <div className="border-border-default bg-background-ivory-medium mb-4 rounded border p-3">
         <div className="mb-2">
-          <label className="text-text-faded block text-xs dark:text-gray-400">当前标题</label>
+          <label className="text-text-faded block text-xs">当前标题</label>
           <p className="text-sm font-medium">{currentTitle || '加载中...'}</p>
         </div>
         <div>
-          <label className="text-text-faded block text-xs dark:text-gray-400">当前网址</label>
-          <p className="text-text-main text-sm dark:text-gray-300">{currentUrl || '加载中...'}</p>
+          <label className="text-text-faded block text-xs">当前网址</label>
+          <p className="text-text-main text-sm">{currentUrl || '加载中...'}</p>
         </div>
       </div>
 
       {/* 复制反馈 */}
       {copyFeedback && (
-        <div className="bg-swatch-cactus/10 text-swatch-cactus mb-4 rounded p-2 text-sm dark:bg-green-900/20 dark:text-green-300">
-          {copyFeedback}
-        </div>
+        <div className="bg-swatch-cactus/10 text-swatch-cactus mb-4 rounded p-2 text-sm">{copyFeedback}</div>
       )}
 
       {/* 格式选择和复制 */}
@@ -1023,9 +1019,9 @@ const CopyTitleModule = () => {
           </div>
 
           {/* 预览 */}
-          <div className="bg-background-ivory-medium dark:bg-background-dark rounded p-3">
-            <label className="text-text-faded mb-1 block text-xs dark:text-gray-400">预览</label>
-            <p className="text-text-main text-sm dark:text-gray-300">
+          <div className="bg-background-ivory-medium rounded p-3">
+            <label className="text-text-faded mb-1 block text-xs">预览</label>
+            <p className="text-text-main text-sm">
               {previewText(
                 selectedFormat === 'custom' ? customFormat : formats.find(f => f.id === selectedFormat)?.template || '',
               )}
@@ -1044,7 +1040,7 @@ const CopyTitleModule = () => {
 
       {/* 快捷键说明 */}
       <div className="mb-4">
-        <div className="bg-background-oat rounded p-3 text-sm text-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
+        <div className="bg-background-oat text-text-main rounded p-3 text-sm">
           <div className="mb-1 font-medium">💡 使用说明</div>
           <div>
             • 使用上方下拉菜单选择复制格式
@@ -1053,7 +1049,7 @@ const CopyTitleModule = () => {
             <br />• 如需修改快捷键，
             <button
               onClick={() => chrome.tabs.create({ url: 'chrome://extensions/configureCommands' })}
-              className="text-primary underline hover:text-blue-800 dark:text-blue-400">
+              className="text-primary hover:text-background-clay underline">
               点此打开设置页面
             </button>
           </div>
@@ -1062,14 +1058,10 @@ const CopyTitleModule = () => {
 
       {/* 快捷键开关 */}
       {Object.entries(shortcuts || {}).map(([command, config]) => (
-        <div
-          key={command}
-          className="border-border-default mb-4 flex items-center justify-between rounded border p-3 dark:border-gray-600">
+        <div key={command} className="border-border-default mb-4 flex items-center justify-between rounded border p-3">
           <div className="flex items-center space-x-2">
             <span className="text-sm">{config.description}</span>
-            <span className="text-primary rounded bg-blue-100 px-2 py-1 text-xs dark:bg-blue-900/20 dark:text-blue-400">
-              {getShortcutText(command)}
-            </span>
+            <span className="text-primary bg-background-oat rounded px-2 py-1 text-xs">{getShortcutText(command)}</span>
           </div>
           <label className="flex cursor-pointer items-center">
             <input
@@ -1078,7 +1070,7 @@ const CopyTitleModule = () => {
               onChange={e => toggleShortcut(command, e.target.checked)}
               className="mr-2"
             />
-            <span className="text-text-faded text-xs dark:text-gray-400">启用</span>
+            <span className="text-text-faded text-xs">启用</span>
           </label>
         </div>
       ))}
@@ -1089,7 +1081,7 @@ const CopyTitleModule = () => {
           <h3 className="text-sm font-medium">自定义格式</h3>
           <button
             onClick={() => setShowCustomFormat(!showCustomFormat)}
-            className="bg-background-ivory-medium text-text-faded hover:bg-swatch-cloud-light rounded px-2 py-1 text-xs dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600">
+            className="bg-background-ivory-medium text-text-faded hover:bg-swatch-cloud-light rounded px-2 py-1 text-xs">
             {showCustomFormat ? '隐藏' : '设置'}
           </button>
         </div>
@@ -1099,12 +1091,12 @@ const CopyTitleModule = () => {
               value={customFormat}
               onChange={e => setCustomFormat(e.target.value)}
               placeholder="输入自定义格式，使用 {title} 和 {url} 作为占位符"
-              className="border-border-default dark:bg-background-dark w-full rounded border p-2 text-sm dark:border-gray-600"
+              className="border-border-default bg-background-main w-full rounded border p-2 text-sm"
               rows={3}
             />
             <button
               onClick={saveCustomFormat}
-              className="bg-swatch-cactus hover:bg-swatch-olive theme-btn-cactus w-full rounded px-3 py-1 text-sm text-white">
+              className="bg-swatch-cactus hover:bg-swatch-olive w-full rounded px-3 py-1 text-sm text-white">
               💾 保存格式
             </button>
             <div className="text-text-faded text-xs">
@@ -1135,7 +1127,7 @@ const ToolsModule = () => {
       <div className="mb-3">
         <button
           onClick={() => setShowFloatingBadgePanel(!showFloatingBadgePanel)}
-          className="bg-background-ivory-medium hover:bg-swatch-cloud-light text-text-main mb-2 w-full rounded px-3 py-2 text-left text-sm dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+          className="bg-background-ivory-medium hover:bg-swatch-cloud-light text-text-main mb-2 w-full rounded px-3 py-2 text-left text-sm">
           <span className="mr-2">🎯</span>
           悬浮徽章设置
         </button>
@@ -1146,7 +1138,7 @@ const ToolsModule = () => {
       <div className="mb-3">
         <button
           onClick={() => setShowEdgeSnappingPanel(!showEdgeSnappingPanel)}
-          className="bg-background-ivory-medium hover:bg-swatch-cloud-light text-text-main mb-2 w-full rounded px-3 py-2 text-left text-sm dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+          className="bg-background-ivory-medium hover:bg-swatch-cloud-light text-text-main mb-2 w-full rounded px-3 py-2 text-left text-sm">
           <span className="mr-2">🧲</span>
           边缘吸附设置
         </button>
@@ -1154,7 +1146,7 @@ const ToolsModule = () => {
       </div>
 
       {/* 更多工具 */}
-      <div className="bg-background-oat rounded p-3 text-sm text-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
+      <div className="bg-background-oat text-text-main rounded p-3 text-sm">
         <div className="mb-1 font-medium">💡 提示</div>
         <div>
           • 悬浮徽章可以让您在任何页面快速打开侧边栏
@@ -1416,7 +1408,7 @@ const DeveloperModule = () => {
         <h2 className="theme-text-main text-lg font-semibold">开发者工具</h2>
         <button
           onClick={() => setShowEdgeSnappingPanel(!showEdgeSnappingPanel)}
-          className="bg-background-ivory-medium hover:bg-swatch-cloud-light text-text-main rounded px-3 py-1.5 text-sm dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+          className="bg-background-ivory-medium hover:bg-swatch-cloud-light text-text-main rounded px-3 py-1.5 text-sm"
           title="边缘吸附设置">
           🧲 边缘吸附
         </button>
@@ -1438,7 +1430,7 @@ const DeveloperModule = () => {
             onChange={e => setCommandInput(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="输入命令，例如: /help 或 /detectForms"
-            className="border-border-default dark:bg-background-dark flex-1 rounded border px-3 py-2 text-sm dark:border-gray-600"
+            className="border-border-default bg-background-main flex-1 rounded border px-3 py-2 text-sm"
             disabled={isExecuting}
           />
           <button
@@ -1459,9 +1451,9 @@ const DeveloperModule = () => {
             <button
               key={index}
               onClick={() => insertExampleCommand(example.command)}
-              className="border-border-default dark:hover:bg-background-dark rounded border p-2 text-left text-xs hover:bg-gray-50 dark:border-gray-600">
-              <code className="text-primary font-mono dark:text-blue-400">{example.command}</code>
-              <p className="text-text-faded mt-1 dark:text-gray-400">{example.description}</p>
+              className="border-border-default hover:bg-background-ivory-medium rounded border p-2 text-left text-xs">
+              <code className="text-primary font-mono">{example.command}</code>
+              <p className="text-text-faded mt-1">{example.description}</p>
             </button>
           ))}
         </div>
@@ -1474,7 +1466,7 @@ const DeveloperModule = () => {
           {commandHistory.length > 0 && (
             <button
               onClick={clearHistory}
-              className="bg-background-clay/20 text-background-clay hover:bg-background-clay/30 rounded px-2 py-1 text-xs dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800">
+              className="bg-background-clay/20 text-background-clay hover:bg-background-clay/30 rounded px-2 py-1 text-xs">
               清空
             </button>
           )}
@@ -1488,17 +1480,17 @@ const DeveloperModule = () => {
         ) : (
           <div className="space-y-3">
             {commandHistory.map((entry, index) => (
-              <div key={index} className="border-border-default rounded border p-3 dark:border-gray-600">
+              <div key={index} className="border-border-default rounded border p-3">
                 <div className="mb-2 flex items-center justify-between">
-                  <code className="text-primary font-mono text-sm dark:text-blue-400">{entry.input}</code>
+                  <code className="text-primary font-mono text-sm">{entry.input}</code>
                   <span className="text-text-faded text-xs">{entry.timestamp}</span>
                 </div>
                 <div
                   className={cn(
                     'rounded p-2 text-sm',
                     entry.result.success
-                      ? 'bg-swatch-cactus/10 text-swatch-cactus dark:bg-green-900/20 dark:text-green-300'
-                      : 'bg-background-clay/10 text-background-clay dark:bg-red-900/20 dark:text-red-300',
+                      ? 'bg-swatch-cactus/10 text-swatch-cactus'
+                      : 'bg-background-clay/10 text-background-clay',
                   )}>
                   <div className="flex items-start">
                     <span className="mr-2 text-lg">{entry.result.success ? '✅' : '❌'}</span>
@@ -1546,7 +1538,7 @@ const SidePanel = () => {
           : 'bg-background-dark text-background-main theme-bg-dark theme-text-main',
       )}>
       {/* 导航标签 */}
-      <nav className="border-border-default bg-background-main dark:border-border-default dark:bg-background-dark theme-bg-main theme-border-default flex border-b">
+      <nav className="border-border-default bg-background-main flex border-b">
         {tabs.map(tab => (
           <button
             key={tab.id}
@@ -1554,8 +1546,8 @@ const SidePanel = () => {
             className={cn(
               'flex min-h-[60px] flex-1 flex-col items-center justify-center px-1 py-2 text-xs font-medium transition-colors',
               activeTab === tab.id
-                ? 'border-primary bg-background-oat text-primary dark:bg-primary/20 dark:text-primary theme-border-primary theme-bg-oat theme-text-primary border-b-2'
-                : 'text-text-faded hover:text-text-main dark:text-text-faded dark:hover:text-background-main',
+                ? 'border-primary bg-background-oat text-primary border-b-2'
+                : 'text-text-faded hover:text-text-main',
             )}>
             <span className="mb-1 text-xl">{tab.icon}</span>
             <span className="text-xs leading-tight">{tab.name}</span>
@@ -1578,7 +1570,7 @@ const SidePanel = () => {
             <div className="p-4 text-center">
               <div className="mb-4 text-4xl">🚧</div>
               <h3 className="mb-2 text-lg font-medium">{tabs.find(t => t.id === activeTab)?.name}</h3>
-              <p className="text-text-faded dark:text-gray-400">功能开发中...</p>
+              <p className="text-text-faded">功能开发中...</p>
             </div>
           )}
       </main>
