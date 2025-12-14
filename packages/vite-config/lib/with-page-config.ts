@@ -34,7 +34,7 @@ export const withPageConfig = (config: UserConfig) =>
                 defaultAction: 'copy',
                 locate: false, // 禁用 IDE 打开，避免 Chrome 扩展环境下的连接问题
               },
-              showSwitch: true,
+              showSwitch: false,
               importClient: 'file', // 使用文件引入而非内联脚本，避免 CSP 问题
               skipSnippets: ['htmlScript'], // 跳过 HTML 内联脚本注入
             }),

@@ -56,7 +56,7 @@
     "@types/turndown": "^5.0.5",
     "@typescript-eslint/parser": "^8.32.1",
     "autoprefixer": "^10.4.21",
-    "code-inspector-plugin": "https://dl.cloudsmith.io/signed/mark/code-inspector/npm/code-inspector-plugin/1.4.2/code-inspector-plugin-1.4.2.tgz?created=1765423062&expires=1765509462&signature=gAAAAABpOjfW1OtOP3OMW7AOPAls79CiGVBVKI_pFi_iyx7K68qvZBaaUg7qtTtp5P-hs3YhlbauXFWEuzag49afshfhKapgQG7VBIfQwK3uPJAXkG5fW1x_of5Y8sFS-EHAf_XjTZNu",
+    "code-inspector-plugin": "https://dl.cloudsmith.io/signed/mark/code-inspector/npm/code-inspector-plugin/1.4.3/code-inspector-plugin-1.4.3.tgz?created=1765736928&expires=1765823328&signature=gAAAAABpPwHgmH5PAQ36N563mI64tJPJ3xzC9v2qNabGZtplBVWVMWsjh6LZ6SsAEqNkJd-SUcRpF1zSt2wwj-zUSaNZkrI8UZxX019K5DZGvEzmTmXmYLjE6-Mi9BXAPutPvb0pAhAW",
     "cross-env": "^7.0.3",
     "deepmerge": "^4.3.1",
     "eslint": "^9.27.0",
