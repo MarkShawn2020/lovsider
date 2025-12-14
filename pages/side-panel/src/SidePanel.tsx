@@ -1113,15 +1113,14 @@ const CopyTitleModule = () => {
   );
 };
 
-// 开发者工具模块
-// 工具模块
+// 设置模块
 const ToolsModule = () => {
   const [showFloatingBadgePanel, setShowFloatingBadgePanel] = useState(false);
   const [showEdgeSnappingPanel, setShowEdgeSnappingPanel] = useState(false);
 
   return (
     <div className="flex h-full flex-col p-4">
-      <h2 className="theme-text-main mb-4 text-lg font-semibold">工具箱</h2>
+      <h2 className="theme-text-main mb-4 text-lg font-semibold">设置</h2>
 
       {/* 悬浮徽章设置 */}
       <div className="mb-3">
@@ -1525,7 +1524,7 @@ const SidePanel = () => {
     { id: 'copy', name: '复制', icon: '📋' },
     { id: 'text', name: '文本', icon: '📝' },
     { id: 'dev', name: '开发', icon: '🛠️' },
-    { id: 'tools', name: '工具', icon: '⚡' },
+    { id: 'tools', name: '设置', icon: '⚙️' },
     { id: 'profile', name: '我的', icon: '👤' },
   ];
 

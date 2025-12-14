@@ -22,6 +22,7 @@ export const FloatingBadgePanel = ({ onClose }: { onClose: () => void }) => {
   const [useWhitelist, setUseWhitelist] = useState(false);
   const [newDomain, setNewDomain] = useState('');
   const [saveFeedback, setSaveFeedback] = useState('');
+  const [currentHostname, setCurrentHostname] = useState('');
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -32,12 +33,35 @@ export const FloatingBadgePanel = ({ onClose }: { onClose: () => void }) => {
         setBlacklist(data.blacklist || []);
         setWhitelist(data.whitelist || []);
         setUseWhitelist(data.useWhitelist || false);
+
+        // 获取当前网站 hostname
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tab.url) {
+          setCurrentHostname(new URL(tab.url).hostname);
+        }
       } catch (error) {
         console.error('加载悬浮徽章设置失败:', error);
       }
     };
 
     loadSettings();
+
+    // 监听 storage 变化实时更新
+    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+      if (areaName === 'local' && changes['floating-badge-storage-key']) {
+        const newData = changes['floating-badge-storage-key'].newValue;
+        if (newData) {
+          setEnabled(newData.enabled);
+          setConfig(newData.config);
+          setBlacklist(newData.blacklist || []);
+          setWhitelist(newData.whitelist || []);
+          setUseWhitelist(newData.useWhitelist || false);
+        }
+      }
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    return () => chrome.storage.onChanged.removeListener(handleStorageChange);
   }, []);
 
   const updateConfig = async (key: keyof FloatingBadgeConfig, value: any) => {
@@ -182,6 +206,18 @@ export const FloatingBadgePanel = ({ onClose }: { onClose: () => void }) => {
           <label className="text-text-main text-sm dark:text-gray-300">启用悬浮徽章</label>
           <input type="checkbox" checked={enabled} onChange={toggleEnabled} className="rounded" />
         </div>
+
+        {/* 当前网站状态提示 */}
+        {enabled && currentHostname && blacklist.includes(currentHostname) && (
+          <div className="flex items-center justify-between rounded bg-amber-50 p-2 dark:bg-amber-900/20">
+            <span className="text-xs text-amber-800 dark:text-amber-300">当前网站已隐藏</span>
+            <button
+              onClick={() => removeFromBlacklist(currentHostname)}
+              className="rounded bg-amber-600 px-2 py-1 text-xs text-white hover:bg-amber-700">
+              恢复显示
+            </button>
+          </div>
+        )}
 
         {/* 位置设置 */}
         <div>

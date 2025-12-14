@@ -8,6 +8,7 @@ import { safeSendMessage } from './helpers.js';
 export class FloatingBadgeSimple {
   private container: HTMLDivElement | null = null;
   private button: HTMLButtonElement | null = null;
+  private hideMenu: HTMLDivElement | null = null;
   private isOpen = false;
 
   // 拖拽状态
@@ -17,6 +18,9 @@ export class FloatingBadgeSimple {
   private currentY = 100; // 默认初始位置
   private mouseDownTime = 0;
   private hasMoved = false;
+
+  // 菜单状态
+  private hideMenuVisible = false;
 
   // 配置
   private readonly STORAGE_KEY = 'lovpen-badge-position';
@@ -140,14 +144,202 @@ export class FloatingBadgeSimple {
     `;
     document.head.appendChild(style);
 
+    // 创建隐藏菜单
+    this.createHideMenu();
+
     // 组装元素
     this.container.appendChild(this.button);
+    if (this.hideMenu) {
+      this.container.appendChild(this.hideMenu);
+    }
 
     // 设置事件处理
     this.setupEventHandlers();
 
     // 添加到页面
     document.body.appendChild(this.container);
+  }
+
+  private createHideMenu(): void {
+    this.hideMenu = document.createElement('div');
+    this.hideMenu.className = 'lovpen-context-menu';
+    this.hideMenu.style.cssText = `
+      position: absolute;
+      right: 48px;
+      top: 0;
+      background: #F9F9F7;
+      border: 1px solid #E8E6DC;
+      border-radius: 12px;
+      padding: 6px 0;
+      min-width: 150px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(8px);
+      transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
+      z-index: 2147483647;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      box-shadow: 0 2px 8px rgba(24, 24, 24, 0.08);
+    `;
+
+    const menuGroups: Array<{
+      items: Array<{ label: string; action: string; hint?: string }>;
+      footer?: string;
+    }> = [
+      {
+        items: [{ label: '打开面板', action: 'open-panel' }],
+      },
+      {
+        items: [
+          { label: '本次隐藏', action: 'hide-session', hint: '刷新页面后恢复' },
+          { label: '本网站隐藏', action: 'hide-site' },
+          { label: '全部隐藏', action: 'hide-all' },
+        ],
+        footer: '点击扩展图标可重新启用',
+      },
+      {
+        items: [
+          { label: '关于 LovPen', action: 'about' },
+          { label: '反馈问题', action: 'feedback' },
+        ],
+      },
+    ];
+
+    menuGroups.forEach((group, groupIndex) => {
+      if (groupIndex > 0) {
+        const divider = document.createElement('div');
+        divider.style.cssText = `
+          height: 1px;
+          background: #E8E6DC;
+          margin: 6px 12px;
+        `;
+        this.hideMenu!.appendChild(divider);
+      }
+
+      group.items.forEach(item => {
+        const menuItem = document.createElement('div');
+        menuItem.className = 'lovpen-menu-item';
+        menuItem.dataset.action = item.action;
+        menuItem.style.cssText = `
+          padding: 8px 16px;
+          cursor: pointer;
+          font-size: 13px;
+          color: #181818;
+          white-space: nowrap;
+          transition: background 0.15s, color 0.15s;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        `;
+
+        const labelSpan = document.createElement('span');
+        labelSpan.textContent = item.label;
+        menuItem.appendChild(labelSpan);
+
+        if (item.hint) {
+          const hintSpan = document.createElement('span');
+          hintSpan.style.cssText = 'font-size: 11px; color: #87867F;';
+          hintSpan.textContent = item.hint;
+          menuItem.appendChild(hintSpan);
+        }
+
+        menuItem.addEventListener('mouseenter', () => {
+          menuItem.style.background = '#F0EEE6';
+          labelSpan.style.color = '#CC785C';
+        });
+        menuItem.addEventListener('mouseleave', () => {
+          menuItem.style.background = '';
+          labelSpan.style.color = '#181818';
+        });
+
+        menuItem.addEventListener('click', e => {
+          e.stopPropagation();
+          this.handleMenuAction(item.action);
+        });
+
+        this.hideMenu!.appendChild(menuItem);
+      });
+
+      // 添加组底部提示
+      if (group.footer) {
+        const footerDiv = document.createElement('div');
+        footerDiv.style.cssText = `
+          padding: 6px 16px 2px;
+          font-size: 11px;
+          color: #87867F;
+        `;
+        footerDiv.textContent = group.footer;
+        this.hideMenu!.appendChild(footerDiv);
+      }
+    });
+  }
+
+  private showHideMenu(): void {
+    if (this.hideMenu && !this.hideMenuVisible) {
+      this.hideMenuVisible = true;
+      this.hideMenu.style.opacity = '1';
+      this.hideMenu.style.visibility = 'visible';
+      this.hideMenu.style.transform = 'translateX(0)';
+    }
+  }
+
+  private hideHideMenu(): void {
+    if (this.hideMenu && this.hideMenuVisible) {
+      this.hideMenuVisible = false;
+      this.hideMenu.style.opacity = '0';
+      this.hideMenu.style.visibility = 'hidden';
+      this.hideMenu.style.transform = 'translateX(8px)';
+    }
+  }
+
+  private toggleHideMenu(): void {
+    if (this.hideMenuVisible) {
+      this.hideHideMenu();
+    } else {
+      this.showHideMenu();
+    }
+  }
+
+  private handleMenuAction(action: string): void {
+    const hostname = window.location.hostname;
+
+    switch (action) {
+      case 'open-panel':
+        this.toggleSidebar();
+        break;
+
+      case 'hide-session':
+        this.hide();
+        break;
+
+      case 'hide-site':
+        safeSendMessage({
+          action: 'addToFloatingBadgeBlacklist',
+          hostname,
+        });
+        this.destroy();
+        break;
+
+      case 'hide-all':
+        safeSendMessage({
+          action: 'disableFloatingBadge',
+        });
+        this.destroy();
+        break;
+
+      case 'about':
+        // chrome:// 链接需要通过 background 打开
+        safeSendMessage({
+          action: 'openExtensionPage',
+        });
+        break;
+
+      case 'feedback':
+        window.open('https://github.com/markShawn2020/lovpen-sider/issues', '_blank');
+        break;
+    }
+
+    this.hideHideMenu();
   }
 
   private setupEventHandlers(): void {
@@ -328,9 +520,25 @@ export class FloatingBadgeSimple {
     this.button.addEventListener('mousedown', handleMouseDown);
     this.button.addEventListener('touchstart', handleTouchStart, { passive: true });
 
-    // 阻止右键菜单
+    // 右键菜单显示隐藏选项
     this.button.addEventListener('contextmenu', e => {
       e.preventDefault();
+      e.stopPropagation();
+      this.toggleHideMenu();
+    });
+
+    // 点击其他区域关闭菜单
+    document.addEventListener('click', e => {
+      if (this.hideMenuVisible && !this.hideMenu?.contains(e.target as Node)) {
+        this.hideHideMenu();
+      }
+    });
+
+    // ESC 关闭菜单
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && this.hideMenuVisible) {
+        this.hideHideMenu();
+      }
     });
   }
 

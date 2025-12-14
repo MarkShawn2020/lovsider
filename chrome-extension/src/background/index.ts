@@ -146,6 +146,32 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     } else {
       sendResponse({ state: null });
     }
+  } else if (request.action === 'addToFloatingBadgeBlacklist') {
+    // 添加网站到黑名单
+    const hostname = request.hostname;
+    chrome.storage.local.get('floating-badge-storage-key').then(result => {
+      const data = result['floating-badge-storage-key'] || { blacklist: [] };
+      const blacklist = data.blacklist || [];
+      if (!blacklist.includes(hostname)) {
+        blacklist.push(hostname);
+      }
+      data.blacklist = blacklist;
+      chrome.storage.local.set({ 'floating-badge-storage-key': data });
+      sendResponse({ success: true });
+    });
+  } else if (request.action === 'disableFloatingBadge') {
+    // 全局禁用悬浮徽章
+    chrome.storage.local.get('floating-badge-storage-key').then(result => {
+      const data = result['floating-badge-storage-key'] || {};
+      data.enabled = false;
+      chrome.storage.local.set({ 'floating-badge-storage-key': data });
+      sendResponse({ success: true });
+    });
+  } else if (request.action === 'openExtensionPage') {
+    // 打开扩展管理页面
+    const extensionId = chrome.runtime.id;
+    chrome.tabs.create({ url: `chrome://extensions/?id=${extensionId}` });
+    sendResponse({ success: true });
   }
 
   return true; // 保持消息通道开放
