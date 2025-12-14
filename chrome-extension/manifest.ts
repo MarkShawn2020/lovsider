@@ -74,15 +74,6 @@ const manifest = {
   side_panel: {
     default_path: 'side-panel/index.html',
   },
-  commands: {
-    'copy-title-selected': {
-      suggested_key: {
-        default: 'Ctrl+Shift+K',
-        mac: 'Command+Shift+K',
-      },
-      description: 'Copy page title in selected format',
-    },
-  },
 } satisfies ManifestType;
 
 export default manifest;
