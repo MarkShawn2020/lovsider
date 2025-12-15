@@ -23,14 +23,14 @@ export class FloatingBadgeSimple {
   private hideMenuVisible = false;
 
   // 配置
-  private readonly STORAGE_KEY = 'lovpen-badge-position';
+  private readonly STORAGE_KEY = 'lovsider-badge-position';
   private readonly MIN_Y = 10;
   private readonly DRAG_THRESHOLD = 5; // 移动5px以上才认为是拖拽
   private readonly CLICK_TIME_THRESHOLD = 200; // 200ms内完成的是点击
 
   public init(): void {
     // 移除任何已存在的徽章
-    const existing = document.getElementById('lovpen-simple-badge');
+    const existing = document.getElementById('lovsider-simple-badge');
     if (existing) existing.remove();
 
     // 加载保存的位置
@@ -38,7 +38,7 @@ export class FloatingBadgeSimple {
 
     // 创建容器
     this.container = document.createElement('div');
-    this.container.id = 'lovpen-simple-badge';
+    this.container.id = 'lovsider-simple-badge';
     this.container.style.cssText = `
       position: fixed;
       right: 0;
@@ -88,42 +88,42 @@ export class FloatingBadgeSimple {
     // 添加样式
     const style = document.createElement('style');
     style.textContent = `
-      #lovpen-simple-badge {
+      #lovsider-simple-badge {
         transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
-      #lovpen-simple-badge:hover {
+      #lovsider-simple-badge:hover {
         width: 64px !important;
       }
-      #lovpen-simple-badge.dragging {
+      #lovsider-simple-badge.dragging {
         transition: none !important;
       }
-      #lovpen-simple-badge.dragging:hover {
+      #lovsider-simple-badge.dragging:hover {
         width: 48px !important;
       }
-      #lovpen-simple-badge button:hover:not(.dragging) {
+      #lovsider-simple-badge button:hover:not(.dragging) {
         box-shadow: -4px 0 12px rgba(24, 24, 24, 0.15);
       }
-      #lovpen-simple-badge button:active:not(.dragging) {
+      #lovsider-simple-badge button:active:not(.dragging) {
         opacity: 0.95;
       }
-      #lovpen-simple-badge button.dragging {
+      #lovsider-simple-badge button.dragging {
         opacity: 0.9;
         cursor: ns-resize !important;
         box-shadow: -4px 0 16px rgba(24, 24, 24, 0.2);
       }
-      
+
       /* 拖拽时的提示动画 */
       @keyframes dragHint {
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-2px); }
       }
-      
-      #lovpen-simple-badge.drag-ready button {
+
+      #lovsider-simple-badge.drag-ready button {
         animation: dragHint 1.5s ease-in-out infinite;
       }
-      
+
       /* 长按提示效果 */
-      #lovpen-simple-badge button::after {
+      #lovsider-simple-badge button::after {
         content: '';
         position: absolute;
         top: 50%;
@@ -136,8 +136,8 @@ export class FloatingBadgeSimple {
         transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         pointer-events: none;
       }
-      
-      #lovpen-simple-badge button.pressing::after {
+
+      #lovsider-simple-badge button.pressing::after {
         width: 100%;
         height: 100%;
       }
@@ -162,7 +162,7 @@ export class FloatingBadgeSimple {
 
   private createHideMenu(): void {
     this.hideMenu = document.createElement('div');
-    this.hideMenu.className = 'lovpen-context-menu';
+    this.hideMenu.className = 'lovsider-context-menu';
     this.hideMenu.style.cssText = `
       position: absolute;
       right: 48px;
@@ -198,7 +198,7 @@ export class FloatingBadgeSimple {
       },
       {
         items: [
-          { label: '关于 LovPen', action: 'about' },
+          { label: '关于 LovSider', action: 'about' },
           { label: '反馈问题', action: 'feedback' },
         ],
       },
@@ -217,7 +217,7 @@ export class FloatingBadgeSimple {
 
       group.items.forEach(item => {
         const menuItem = document.createElement('div');
-        menuItem.className = 'lovpen-menu-item';
+        menuItem.className = 'lovsider-menu-item';
         menuItem.dataset.action = item.action;
         menuItem.style.cssText = `
           padding: 8px 16px;
@@ -335,7 +335,7 @@ export class FloatingBadgeSimple {
         break;
 
       case 'feedback':
-        window.open('https://github.com/markShawn2020/lovpen-sider/issues', '_blank');
+        window.open('https://github.com/markShawn2020/lovsider/issues', '_blank');
         break;
     }
 

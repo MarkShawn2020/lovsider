@@ -1,7 +1,7 @@
 {
-  "name": "lovpen-sider",
+  "name": "lovsider",
   "version": "1.1.4",
-  "description": "Lovpen Sider - Multi-functional sidebar toolkit for web capture, text processing, development tools, and productivity assistance",
+  "description": "LovSider - Multi-functional sidebar toolkit for web capture, text processing, development tools, and productivity assistance",
   "license": "MIT",
   "private": true,
   "sideEffects": false,
