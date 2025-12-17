@@ -51,6 +51,7 @@ export class SyncManager {
       },
       5 * 60 * 1000,
     );
+    this.autoSyncInterval?.unref?.();
   }
 
   async enableAutoSync(): Promise<void> {
@@ -187,9 +188,10 @@ export class SyncManager {
       });
 
       // 安排重试
-      setTimeout(() => {
+      const retryTimeout = setTimeout(() => {
         this.retryItem(item.id).catch(console.error);
       }, delay);
+      (retryTimeout as unknown as { unref?: () => void }).unref?.();
     } else {
       // 达到最大重试次数，标记为永久失败
       await dbManager.updateSyncQueueItem(item.id, {
