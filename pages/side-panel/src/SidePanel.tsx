@@ -148,6 +148,8 @@ const SimpleCaptureModule = () => {
   const [showPresetsPanel, setShowPresetsPanel] = useState(false);
   const [domPathCopied, setDomPathCopied] = useState(false);
   const [markdownCopied, setMarkdownCopied] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [exportAction, setExportAction] = useState<'download' | 'copy'>('download');
 
   // 初始化和URL监听
   useEffect(() => {
@@ -337,6 +339,78 @@ const SimpleCaptureModule = () => {
     }
   };
 
+  const hasFrontmatter = (text: string): boolean => /^---\n[\s\S]*?\n---/.test(text);
+
+  const parseFrontmatter = (text: string): { frontmatter: Record<string, string>; content: string } => {
+    const match = text.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+    if (!match) return { frontmatter: {}, content: text };
+
+    const frontmatterStr = match[1];
+    const content = match[2] || '';
+    const frontmatter: Record<string, string> = {};
+
+    frontmatterStr.split('\n').forEach(line => {
+      const idx = line.indexOf(':');
+      if (idx > 0) {
+        const key = line.slice(0, idx).trim();
+        const value = line.slice(idx + 1).replace(/^ /, ''); // 只去掉冒号后的一个空格
+        frontmatter[key] = value;
+      }
+    });
+
+    return { frontmatter, content };
+  };
+
+  const buildMarkdown = (frontmatter: Record<string, string>, content: string): string => {
+    const fm = Object.entries(frontmatter)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join('\n');
+    const trimmedContent = content.replace(/^\n+/, '');
+    return `---\n${fm}\n---\n\n${trimmedContent}`;
+  };
+
+  const updateFrontmatterField = (key: string, value: string) => {
+    const { frontmatter, content } = parseFrontmatter(markdownOutput);
+    frontmatter[key] = value;
+    setMarkdownOutput(buildMarkdown(frontmatter, content));
+  };
+
+  const updateContent = (newContent: string) => {
+    const { frontmatter } = parseFrontmatter(markdownOutput);
+    setMarkdownOutput(buildMarkdown(frontmatter, newContent));
+  };
+
+  const generateFrontmatter = (title: string, source: string): string => {
+    const datetime = new Date().toISOString();
+    const slug = `content-${Date.now()}`;
+    return `---
+title: ${title}
+slug: ${slug}
+source: ${source}
+datetime: ${datetime}
+---
+
+`;
+  };
+
+  const pasteFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text) return;
+
+      if (hasFrontmatter(text)) {
+        setMarkdownOutput(text);
+      } else {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        const title = tab.title || 'Pasted Content';
+        const source = tab.url || '';
+        setMarkdownOutput(generateFrontmatter(title, source) + text);
+      }
+    } catch (error) {
+      console.error('从剪切板读取失败:', error);
+    }
+  };
+
   const downloadMarkdown = async () => {
     if (!markdownOutput) return;
 
@@ -459,11 +533,6 @@ const SimpleCaptureModule = () => {
     }
   };
 
-  const clearContent = () => {
-    setMarkdownOutput('');
-    setDomPath('');
-  };
-
   const copyDomPath = async () => {
     if (!domPath) return;
 
@@ -560,39 +629,47 @@ const SimpleCaptureModule = () => {
 
   return (
     <div className="bg-background flex h-full flex-col overflow-hidden p-4">
-      {/* 页面标题 - 衬线体 */}
-      <h2 className="text-foreground mb-4 font-serif text-xl font-semibold">页面捕获</h2>
+      {/* 页面标题栏 */}
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-foreground font-serif text-xl font-semibold">页面捕获</h2>
+        <button
+          onClick={() => setShowPresetsPanel(!showPresetsPanel)}
+          className="bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-lg p-2 transition-colors"
+          title="预设配置">
+          ⚙️
+        </button>
+      </div>
 
       {/* 操作按钮区域 */}
       <div className="mb-4 space-y-3">
-        {/* 主按钮组 - 智能选择在前 */}
+        {/* 主按钮组 - 单行响应式 */}
         <div className="flex gap-2">
           <button
             onClick={smartSelect}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium">
-            <span>🤖</span>
-            <span>智能选择</span>
+            className="bg-primary text-primary-foreground hover:bg-primary/90 flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-sm font-medium">
+            <span className="shrink-0">🤖</span>
+            <span className="truncate">智能选择</span>
           </button>
           {!isSelecting ? (
             <button
               onClick={startSelection}
-              className="border-border bg-card text-card-foreground hover:bg-accent flex flex-1 items-center justify-center gap-2 rounded-lg border py-2.5 text-sm font-medium">
-              <span>🎯</span>
-              <span>手动选择</span>
+              className="border-border bg-card text-card-foreground hover:bg-accent flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg border px-2 py-2.5 text-sm font-medium">
+              <span className="shrink-0">🎯</span>
+              <span className="truncate">手动选择</span>
             </button>
           ) : (
             <button
               onClick={stopSelection}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium">
-              <span>⏹️</span>
-              <span>停止选择</span>
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-sm font-medium">
+              <span className="shrink-0">⏹️</span>
+              <span className="truncate">停止选择</span>
             </button>
           )}
           <button
-            onClick={() => setShowPresetsPanel(!showPresetsPanel)}
-            className="bg-secondary hover:bg-secondary/80 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg text-lg"
-            title="预设配置">
-            ⚙️
+            onClick={pasteFromClipboard}
+            className="border-border bg-card text-card-foreground hover:bg-accent flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg border px-2 py-2.5 text-sm font-medium">
+            <span className="shrink-0">📋</span>
+            <span className="truncate">粘贴</span>
           </button>
         </div>
 
@@ -666,37 +743,86 @@ const SimpleCaptureModule = () => {
             {/* 标题栏 */}
             <div className="border-border flex items-center justify-between border-b px-4 py-3">
               <h3 className="text-card-foreground text-sm font-medium">Markdown 内容</h3>
-              <div className="flex gap-1">
-                <button
-                  onClick={downloadMarkdown}
-                  className="bg-primary/10 text-primary hover:bg-primary/20 rounded-lg p-2 text-sm"
-                  title="下载">
-                  📥
-                </button>
-                <button
-                  onClick={copyToClipboard}
-                  className={cn(
-                    'rounded-lg p-2 text-sm transition-colors',
-                    markdownCopied
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-foreground hover:bg-secondary/80',
-                  )}
-                  title={markdownCopied ? '已复制!' : '复制'}>
-                  {markdownCopied ? '✓' : '📋'}
-                </button>
-                <button
-                  onClick={clearContent}
-                  className="bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg p-2 text-sm"
-                  title="清空">
-                  🗑️
-                </button>
+              {/* Split Button */}
+              <div className="relative">
+                <div className="flex">
+                  <button
+                    onClick={exportAction === 'download' ? downloadMarkdown : copyToClipboard}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-1.5 rounded-l-lg px-3 py-1.5 text-sm font-medium">
+                    <span>{exportAction === 'download' ? '📥' : markdownCopied ? '✓' : '📋'}</span>
+                    <span>{exportAction === 'download' ? '下载' : markdownCopied ? '已复制' : '复制'}</span>
+                  </button>
+                  <button
+                    onClick={() => setShowExportMenu(!showExportMenu)}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 border-primary-foreground/20 rounded-r-lg border-l px-2 py-1.5">
+                    <span className={cn('inline-block transition-transform', showExportMenu && 'rotate-180')}>▾</span>
+                  </button>
+                </div>
+                {showExportMenu && (
+                  <div className="border-border bg-card absolute right-0 top-full z-10 mt-1 min-w-[120px] rounded-lg border py-1 shadow-lg">
+                    <button
+                      onClick={() => {
+                        setExportAction('download');
+                        setShowExportMenu(false);
+                      }}
+                      className={cn(
+                        'flex w-full items-center gap-2 px-3 py-2 text-sm',
+                        exportAction === 'download' ? 'bg-muted text-foreground' : 'text-foreground hover:bg-muted',
+                      )}>
+                      <span>📥</span>
+                      <span>下载</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setExportAction('copy');
+                        setShowExportMenu(false);
+                      }}
+                      className={cn(
+                        'flex w-full items-center gap-2 px-3 py-2 text-sm',
+                        exportAction === 'copy' ? 'bg-muted text-foreground' : 'text-foreground hover:bg-muted',
+                      )}>
+                      <span>📋</span>
+                      <span>复制</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* 内容预览 */}
-            <pre className="bg-muted text-foreground flex-1 overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs">
-              {markdownOutput}
-            </pre>
+            {/* Frontmatter 表单 */}
+            {(() => {
+              const { frontmatter, content } = parseFrontmatter(markdownOutput);
+              return (
+                <div className="flex flex-1 flex-col overflow-hidden">
+                  <div className="border-border space-y-2 border-b p-3">
+                    <div className="flex items-center gap-2">
+                      <label className="text-muted-foreground w-16 shrink-0 text-xs">标题</label>
+                      <input
+                        type="text"
+                        value={frontmatter.title || ''}
+                        onChange={e => updateFrontmatterField('title', e.target.value)}
+                        className="border-input bg-background text-foreground flex-1 rounded border px-2 py-1 text-xs focus:outline-none"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-muted-foreground w-16 shrink-0 text-xs">来源</label>
+                      <input
+                        type="text"
+                        value={frontmatter.source || ''}
+                        onChange={e => updateFrontmatterField('source', e.target.value)}
+                        className="border-input bg-background text-foreground flex-1 rounded border px-2 py-1 text-xs focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                  {/* 正文编辑 */}
+                  <textarea
+                    value={content}
+                    onChange={e => updateContent(e.target.value)}
+                    className="bg-muted text-foreground flex-1 resize-none overflow-auto p-4 font-mono text-xs focus:outline-none"
+                  />
+                </div>
+              );
+            })()}
           </div>
         ) : (
           <div className="bg-muted flex h-full flex-col items-center justify-center rounded-xl py-12">

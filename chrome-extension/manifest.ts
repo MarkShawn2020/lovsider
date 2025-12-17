@@ -41,6 +41,7 @@ const manifest = {
     'downloads',
     'notifications',
     'offscreen',
+    'clipboardRead',
   ],
   options_page: 'options/index.html',
   background: {
