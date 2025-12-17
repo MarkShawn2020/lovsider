@@ -15,14 +15,28 @@ export const watchOption = IS_DEV
     }
   : undefined;
 
+const baseConfig = {
+  define: {
+    'process.env': env,
+  },
+  base: '',
+  build: {
+    sourcemap: IS_DEV,
+    minify: IS_PROD,
+    reportCompressedSize: IS_PROD,
+    emptyOutDir: IS_PROD,
+    watch: watchOption,
+    rollupOptions: {
+      external: ['chrome'],
+    },
+  },
+};
+
 export const withPageConfig = (config: UserConfig) =>
   defineConfig(
     deepmerge(
       {
-        define: {
-          'process.env': env,
-        },
-        base: '',
+        ...baseConfig,
         plugins: [
           react(),
           IS_DEV && watchRebuildPlugin({ refresh: true }),
@@ -40,16 +54,18 @@ export const withPageConfig = (config: UserConfig) =>
             }),
           nodePolyfills(),
         ],
-        build: {
-          sourcemap: IS_DEV,
-          minify: IS_PROD,
-          reportCompressedSize: IS_PROD,
-          emptyOutDir: IS_PROD,
-          watch: watchOption,
-          rollupOptions: {
-            external: ['chrome'],
-          },
-        },
+      },
+      config,
+    ),
+  );
+
+// Content script 专用配置，不包含 codeInspectorPlugin（会在某些页面因 customElements 不可用而报错）
+export const withContentScriptConfig = (config: UserConfig) =>
+  defineConfig(
+    deepmerge(
+      {
+        ...baseConfig,
+        plugins: [react(), IS_DEV && watchRebuildPlugin({ refresh: true }), nodePolyfills()],
       },
       config,
     ),

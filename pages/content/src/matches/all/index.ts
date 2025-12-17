@@ -107,6 +107,9 @@ let selector = new LovpenSiderElementSelector({
 // 异步加载用户配置的预设
 async function loadUserPresets() {
   try {
+    // Chrome API 不可用时跳过
+    if (!chrome?.storage?.local) return;
+
     // 从storage获取用户配置
     const result = await chrome.storage.local.get('site-presets-storage-key');
     if (result['site-presets-storage-key']) {
@@ -167,7 +170,7 @@ async function loadUserPresets() {
 loadUserPresets();
 
 // 监听存储变化，实时更新预设
-chrome.storage.onChanged.addListener((changes, areaName) => {
+chrome.storage?.onChanged?.addListener((changes, areaName) => {
   if (areaName === 'local' && changes['site-presets-storage-key']) {
     console.log('[LovpenSider] 检测到预设配置变化，重新加载');
     loadUserPresets();
@@ -182,7 +185,7 @@ const formFiller = new FormFiller();
 const elementMarker = new ElementMarker();
 
 // 监听来自侧边栏的消息
-chrome.runtime.onMessage.addListener(
+chrome.runtime?.onMessage?.addListener(
   (request: unknown, _sender: unknown, sendResponse: (response?: unknown) => void) => {
     if (!request || typeof request !== 'object') return false;
 
@@ -526,6 +529,9 @@ let floatingBadge: FloatingBadgeSimple | null = null;
 
 async function initializeFloatingBadge() {
   try {
+    // Chrome API 不可用时跳过
+    if (!chrome?.storage?.local) return;
+
     // 获取当前网站的 hostname
     const hostname = window.location.hostname;
 
@@ -571,7 +577,7 @@ async function initializeFloatingBadge() {
 }
 
 // 监听存储变化，实时更新悬浮徽章
-chrome.storage.onChanged.addListener((changes, areaName) => {
+chrome.storage?.onChanged?.addListener((changes, areaName) => {
   if (areaName === 'local' && changes['floating-badge-storage-key']) {
     console.log('[LovpenSider] 检测到悬浮徽章配置变化');
 
@@ -587,7 +593,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 });
 
 // 监听来自 popup 或 sidebar 的消息
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime?.onMessage?.addListener((request, sender, sendResponse) => {
   if (request.action === 'toggleFloatingBadge') {
     if (floatingBadge) {
       floatingBadge.toggle();

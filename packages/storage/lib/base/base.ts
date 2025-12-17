@@ -41,12 +41,8 @@ let globalSessionAccessLevelFlag: StorageConfigType['sessionAccessForContentScri
  * Checks if the storage permission is granted in the manifest.json.
  */
 const checkStoragePermission = (storageEnum: StorageEnum): void => {
-  if (!chrome) {
+  if (!chrome?.storage?.[storageEnum]) {
     return;
-  }
-
-  if (!chrome.storage[storageEnum]) {
-    throw new Error(`"storage" permission in manifest.ts: "storage ${storageEnum}" isn't defined`);
   }
 };
 
@@ -76,8 +72,8 @@ export const createStorage = <D = string>(
   ) {
     checkStoragePermission(storageEnum);
 
-    chrome?.storage[storageEnum]
-      .setAccessLevel({
+    chrome?.storage?.[storageEnum]
+      ?.setAccessLevel({
         accessLevel: SessionAccessLevelEnum.ExtensionPagesAndContentScripts,
       })
       .catch(error => {
@@ -90,7 +86,7 @@ export const createStorage = <D = string>(
   // Register life cycle methods
   const get = async (): Promise<D> => {
     checkStoragePermission(storageEnum);
-    const value = await chrome?.storage[storageEnum].get([key]);
+    const value = await chrome?.storage?.[storageEnum]?.get([key]);
 
     if (!value) {
       return fallback;
@@ -105,7 +101,7 @@ export const createStorage = <D = string>(
     }
     cache = await updateCache(valueOrUpdate, cache);
 
-    await chrome?.storage[storageEnum].set({ [key]: serialize(cache) });
+    await chrome?.storage?.[storageEnum]?.set({ [key]: serialize(cache) });
     _emitChange();
   };
 
@@ -145,7 +141,7 @@ export const createStorage = <D = string>(
 
   // Register listener for live updates for our storage area
   if (liveUpdate) {
-    chrome?.storage[storageEnum].onChanged.addListener(_updateFromStorageOnChanged);
+    chrome?.storage?.[storageEnum]?.onChanged?.addListener(_updateFromStorageOnChanged);
   }
 
   return {

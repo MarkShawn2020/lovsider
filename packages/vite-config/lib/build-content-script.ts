@@ -1,4 +1,4 @@
-import { withPageConfig } from './index.js';
+import { withContentScriptConfig } from './index.js';
 import { IS_DEV } from '@extension/env';
 import { makeEntryPointPlugin } from '@extension/hmr';
 import { build as buildTW } from 'tailwindcss/lib/cli/build';
@@ -39,7 +39,7 @@ const getContentScriptEntries = (matchesDir: string) => {
 const configsBuilder = ({ matchesDir, srcDir, rootDir, contentName }: BuilderPropsType) =>
   Object.entries(getContentScriptEntries(matchesDir)).map(([name, entry]) => ({
     name,
-    config: withPageConfig({
+    config: withContentScriptConfig({
       mode: IS_DEV ? 'development' : undefined,
       resolve: {
         alias: {

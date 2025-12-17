@@ -1,60 +1,34 @@
 import { DO_UPDATE, DONE_UPDATE, LOCAL_RELOAD_SOCKET_URL } from '../consts.js';
 import MessageInterpreter from '../interpreter/index.js';
 
-const checkServerAvailability = async (url: string): Promise<boolean> =>
-  // 直接尝试 WebSocket 连接，而不是用 HTTP HEAD 检查
-  // 因为 WebSocketServer 对 HTTP 请求会返回 426 Upgrade Required
-  new Promise(resolve => {
-    try {
-      const ws = new WebSocket(url);
-      const timeout = setTimeout(() => {
-        ws.close();
-        resolve(false);
-      }, 1000);
-      ws.onopen = () => {
-        clearTimeout(timeout);
-        ws.close();
-        resolve(true);
-      };
-      ws.onerror = () => {
-        clearTimeout(timeout);
-        resolve(false);
-      };
-    } catch {
-      resolve(false);
-    }
-  });
 export default async ({ id, onUpdate }: { id: string; onUpdate: () => void }) => {
-  // Check if HMR server is available before attempting WebSocket connection
-  const serverAvailable = await checkServerAvailability(LOCAL_RELOAD_SOCKET_URL);
+  const ws = new WebSocket(LOCAL_RELOAD_SOCKET_URL);
 
-  if (!serverAvailable) {
-    // Silently skip WebSocket connection when HMR server is not running
-    return;
-  }
+  ws.onopen = () => {
+    console.info('[LovSider] HMR connected');
+    ws.addEventListener('message', event => {
+      const message = MessageInterpreter.receive(String(event.data));
 
-  try {
-    const ws = new WebSocket(LOCAL_RELOAD_SOCKET_URL);
+      if (message.type === DO_UPDATE && message.id === id) {
+        onUpdate();
+        ws.send(MessageInterpreter.send({ type: DONE_UPDATE }));
+      }
+    });
+  };
 
-    ws.onopen = () => {
-      ws.addEventListener('message', event => {
-        const message = MessageInterpreter.receive(String(event.data));
+  ws.onerror = () => {
+    console.warn(
+      '%c[LovSider]%c 当前加载的是开发构建版本，但 HMR 服务器未运行。\n' +
+        '• 如需热更新：运行 %cpnpm dev%c\n' +
+        '• 如需生产版本：运行 %cpnpm build%c（不会有此提示）',
+      'color: #f59e0b; font-weight: bold',
+      'color: inherit',
+      'color: #22c55e; font-weight: bold',
+      'color: inherit',
+      'color: #22c55e; font-weight: bold',
+      'color: inherit',
+    );
+  };
 
-        if (message.type === DO_UPDATE && message.id === id) {
-          onUpdate();
-          ws.send(MessageInterpreter.send({ type: DONE_UPDATE }));
-        }
-      });
-    };
-
-    ws.onerror = () => {
-      // Silently ignore WebSocket connection errors
-    };
-
-    ws.onclose = () => {
-      // Silently handle WebSocket close
-    };
-  } catch (error) {
-    // Silently ignore any WebSocket creation errors
-  }
+  ws.onclose = () => {};
 };
