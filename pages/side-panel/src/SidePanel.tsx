@@ -708,7 +708,9 @@ datetime: ${datetime}
           </div>
 
           {!isEditingPath ? (
-            <code className="bg-muted text-foreground block break-all rounded-lg p-3 font-mono text-xs">{domPath}</code>
+            <code className="bg-muted text-foreground block max-h-24 overflow-auto break-all rounded-lg p-3 font-mono text-xs">
+              {domPath}
+            </code>
           ) : (
             <div className="space-y-3">
               <textarea
