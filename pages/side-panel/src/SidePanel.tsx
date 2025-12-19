@@ -188,12 +188,10 @@ const SimpleCaptureModule = () => {
             }, 1000); // 给页面一些时间加载
           } else {
             setDomPath('');
-            setMarkdownOutput('');
           }
         } catch (error) {
           console.error('处理URL变化失败:', error);
           setDomPath('');
-          setMarkdownOutput('');
         }
       }
     };
@@ -213,7 +211,6 @@ const SimpleCaptureModule = () => {
             }, 500);
           } else {
             setDomPath('');
-            setMarkdownOutput('');
           }
         }
       } catch (error) {
@@ -606,8 +603,6 @@ datetime: ${datetime}
 
       if (!response || !response.success) {
         console.error('应用DOM路径失败:', response?.error || '未知错误');
-        // 如果应用失败，清空markdown
-        setMarkdownOutput('');
       }
     } catch (error) {
       console.error('应用DOM路径失败:', error);
@@ -618,7 +613,6 @@ datetime: ${datetime}
         }, 2000);
       } else {
         console.error('重试次数已达上限，停止尝试应用DOM路径');
-        setMarkdownOutput('');
       }
     }
   };
