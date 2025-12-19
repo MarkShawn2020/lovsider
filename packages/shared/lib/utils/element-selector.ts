@@ -241,7 +241,7 @@ export class ElementSelector {
     }
   }
 
-  private enterNavigationMode(): void {
+  enterNavigationMode(): void {
     this.isNavigatingMode = true;
     this.isSelecting = false;
     document.body.style.cursor = 'crosshair';
@@ -399,34 +399,20 @@ export class ElementSelector {
     let current = element;
 
     while (current && current !== document.body && current !== document.documentElement) {
-      let selector = current.tagName.toLowerCase();
-
-      // 添加ID
+      // 如果有 ID，直接用 ID（最稳定）
       if (current.id) {
-        selector += `#${current.id}`;
+        path.unshift(`#${current.id}`);
+        break; // ID 是唯一的，不需要继续向上
       }
 
-      // 添加主要的类名（最多3个）
-      if (current.className && typeof current.className === 'string') {
-        const classes = current.className
-          .split(' ')
-          .filter(cls => cls.trim())
-          .slice(0, 3);
-        if (classes.length > 0) {
-          selector += `.${classes.join('.')}`;
-        }
-      }
+      const tagName = current.tagName.toLowerCase();
 
-      // 如果有兄弟元素，添加nth-child
+      // 计算在兄弟元素中的位置
+      let selector = tagName;
       if (current.parentElement) {
-        const siblings = Array.from(current.parentElement.children).filter(
-          sibling => sibling.tagName === current.tagName,
-        );
-
-        if (siblings.length > 1) {
-          const index = siblings.indexOf(current as Element) + 1;
-          selector += `:nth-child(${index})`;
-        }
+        const siblings = Array.from(current.parentElement.children);
+        const index = siblings.indexOf(current) + 1;
+        selector += `:nth-child(${index})`;
       }
 
       path.unshift(selector);
@@ -480,6 +466,17 @@ export class ElementSelector {
     console.log('Selection cancelled');
   }
 
+  // 选中元素并进入导航模式
+  selectAndNavigate(element: Element): void {
+    this.selectedElement = element;
+    if (this.options.enableNavigation) {
+      this.enterNavigationMode();
+    } else {
+      this.highlightSelectedElement();
+      this.onElementSelected(element);
+    }
+  }
+
   // 智能选择功能
   smartSelect(): void {
     console.log('[ElementSelector] 开始智能选择');
@@ -487,14 +484,7 @@ export class ElementSelector {
 
     if (mainContent) {
       console.log('[ElementSelector] 智能选择成功，选中元素:', mainContent);
-      this.selectedElement = mainContent;
-
-      if (this.options.enableNavigation) {
-        this.enterNavigationMode();
-      } else {
-        this.highlightSelectedElement();
-        this.onElementSelected(mainContent);
-      }
+      this.selectAndNavigate(mainContent);
     } else {
       console.log('[ElementSelector] 智能选择失败，未找到合适的内容元素');
     }

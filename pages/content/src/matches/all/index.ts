@@ -213,6 +213,18 @@ chrome.runtime?.onMessage?.addListener(
       } catch {
         sendResponse({ success: false, error: '无效的DOM路径' });
       }
+    } else if (msg.action === 'reselectFromPath') {
+      try {
+        const element = document.querySelector(msg.domPath || '');
+        if (element) {
+          selector.selectAndNavigate(element);
+          sendResponse({ success: true });
+        } else {
+          sendResponse({ success: false, error: '未找到指定元素' });
+        }
+      } catch {
+        sendResponse({ success: false, error: '无效的DOM路径' });
+      }
     } else if (msg.action === 'copyToClipboard') {
       // 处理剪贴板复制请求
       if (msg.text) {
