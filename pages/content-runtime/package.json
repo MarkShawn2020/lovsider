@@ -1,6 +1,6 @@
 {
   "name": "@extension/content-runtime-script",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "chrome extension - content runtime script",
   "type": "module",
   "private": true,
