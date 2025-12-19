@@ -36,6 +36,7 @@ export class ElementSelector {
   private clickHandler?: (e: MouseEvent) => void;
   private keyDownHandler?: (e: KeyboardEvent) => void;
   private navigationKeyDownHandler?: (e: KeyboardEvent) => void;
+  private exitDetectionCleanup?: () => void;
 
   private markdownConverter: MarkdownConverter;
   private options: ElementSelectorOptions;
@@ -115,6 +116,9 @@ export class ElementSelector {
     document.addEventListener('click', this.clickHandler);
     document.addEventListener('keydown', this.keyDownHandler);
 
+    // 启动退出检测
+    this.startExitDetection();
+
     if (this.options.showStatusMessages) {
       this.showStatusMessage('鼠标悬停选择元素，点击确认，按ESC取消');
     }
@@ -143,6 +147,9 @@ export class ElementSelector {
     if (this.navigationKeyDownHandler) {
       document.removeEventListener('keydown', this.navigationKeyDownHandler);
     }
+
+    // 停止退出检测
+    this.stopExitDetection();
 
     this.removeHighlight();
     this.hideStatusMessage();
@@ -211,6 +218,29 @@ export class ElementSelector {
     }
   }
 
+  private startExitDetection(): void {
+    // 仅检测标签页切换（其他退出逻辑由侧边栏通过 Chrome API 处理）
+    const handleVisibilityChange = () => {
+      if (document.hidden && (this.isSelecting || this.isNavigatingMode)) {
+        this.stopSelection();
+        this.onSelectionCancelled();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    this.exitDetectionCleanup = () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }
+
+  private stopExitDetection(): void {
+    if (this.exitDetectionCleanup) {
+      this.exitDetectionCleanup();
+      this.exitDetectionCleanup = undefined;
+    }
+  }
+
   private enterNavigationMode(): void {
     this.isNavigatingMode = true;
     this.isSelecting = false;
@@ -231,6 +261,11 @@ export class ElementSelector {
 
     this.navigationKeyDownHandler = this.handleNavigationKeyDown.bind(this);
     document.addEventListener('keydown', this.navigationKeyDownHandler);
+
+    // 确保退出检测已启动（smartSelect 直接进入导航模式时需要）
+    if (!this.exitDetectionCleanup) {
+      this.startExitDetection();
+    }
 
     // 保持高亮并发送初始数据
     this.highlightSelectedElement();

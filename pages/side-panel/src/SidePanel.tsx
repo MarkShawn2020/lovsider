@@ -297,6 +297,51 @@ const SimpleCaptureModule = () => {
     };
   }, [currentUrl]);
 
+  // 选择模式下的退出检测
+  useEffect(() => {
+    if (!isSelecting) return;
+
+    const exitSelectionMode = async () => {
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tab?.id) {
+          await chrome.tabs.sendMessage(tab.id, { action: 'stopSelection' });
+        }
+      } catch {
+        // 静默处理
+      }
+      setIsSelecting(false);
+    };
+
+    // 1. 点击侧边栏时退出
+    const handleClick = () => exitSelectionMode();
+    document.addEventListener('click', handleClick, true);
+
+    // 2. 侧边栏窗口获得焦点时退出（用户从网页点回来）
+    const handleFocus = () => exitSelectionMode();
+    window.addEventListener('focus', handleFocus);
+
+    // 3. 标签页切换时退出
+    const handleTabActivated = () => exitSelectionMode();
+    chrome.tabs.onActivated.addListener(handleTabActivated);
+
+    // 4. 窗口焦点变化时退出（切换 app）
+    const handleWindowFocusChanged = (windowId: number) => {
+      if (windowId === chrome.windows.WINDOW_ID_NONE) {
+        // 浏览器失去焦点（切换到其他 app）
+        exitSelectionMode();
+      }
+    };
+    chrome.windows.onFocusChanged.addListener(handleWindowFocusChanged);
+
+    return () => {
+      document.removeEventListener('click', handleClick, true);
+      window.removeEventListener('focus', handleFocus);
+      chrome.tabs.onActivated.removeListener(handleTabActivated);
+      chrome.windows.onFocusChanged.removeListener(handleWindowFocusChanged);
+    };
+  }, [isSelecting]);
+
   const startSelection = async () => {
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -321,7 +366,8 @@ const SimpleCaptureModule = () => {
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       await chrome.tabs.sendMessage(tab.id!, { action: 'smartSelect' });
-      setIsSelecting(false);
+      // smartSelect 会进入导航模式，设置为 true
+      setIsSelecting(true);
     } catch (error) {
       console.error('智能选择失败:', error);
     }
