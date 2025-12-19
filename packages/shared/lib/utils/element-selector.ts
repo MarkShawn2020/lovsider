@@ -244,6 +244,7 @@ export class ElementSelector {
   private enterNavigationMode(): void {
     this.isNavigatingMode = true;
     this.isSelecting = false;
+    document.body.style.cursor = 'crosshair';
 
     // 移除悬停监听，添加导航监听
     if (this.mouseOverHandler) {
