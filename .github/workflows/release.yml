@@ -38,8 +38,12 @@ jobs:
         run: |
           VERSION="${{ steps.tag.outputs.tag }}"
           VERSION="${VERSION#v}"
-          # 提取当前版本的 changelog 内容
-          CHANGELOG=$(awk "/^## ${VERSION}$/,/^## [0-9]/" chrome-extension/CHANGELOG.md | sed '1d;$d')
+          # 提取当前版本的 changelog 内容（从版本标题到下一个版本标题或文件结尾）
+          CHANGELOG=$(awk -v ver="$VERSION" '
+            $0 ~ "^## " ver "$" { found=1; next }
+            found && /^## [0-9]/ { exit }
+            found { print }
+          ' chrome-extension/CHANGELOG.md)
           # 处理多行输出
           echo "content<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGELOG" >> $GITHUB_OUTPUT
