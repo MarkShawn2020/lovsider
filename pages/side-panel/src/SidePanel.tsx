@@ -728,6 +728,18 @@ datetime: ${datetime}
             <h3 className="text-card-foreground text-sm font-medium">DOM 路径</h3>
             <div className="flex gap-1">
               <button
+                onClick={startSelection}
+                className="bg-secondary text-foreground hover:bg-secondary/80 rounded-lg p-2 text-sm"
+                title="重新选择">
+                🎯
+              </button>
+              <button
+                onClick={startEditPath}
+                className="bg-secondary text-foreground hover:bg-secondary/80 rounded-lg p-2 text-sm"
+                title="编辑路径">
+                ✏️
+              </button>
+              <button
                 onClick={copyDomPath}
                 className={cn(
                   'rounded-lg p-2 text-sm transition-colors',
@@ -737,12 +749,6 @@ datetime: ${datetime}
                 )}
                 title={domPathCopied ? '已复制!' : '复制路径'}>
                 {domPathCopied ? '✓' : '📋'}
-              </button>
-              <button
-                onClick={startEditPath}
-                className="bg-secondary text-foreground hover:bg-secondary/80 rounded-lg p-2 text-sm"
-                title="编辑路径">
-                ✏️
               </button>
             </div>
           </div>
