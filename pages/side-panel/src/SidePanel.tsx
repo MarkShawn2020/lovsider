@@ -505,8 +505,9 @@ datetime: ${datetime}
               // 提取相对于 Downloads 文件夹的路径
               const absolutePath = downloadedFile.filename;
 
-              // 复制文件路径到剪贴板，格式：@"$FILE_PATH"
-              navigator.clipboard.writeText(`@"${absolutePath}"`).catch(console.error);
+              // 复制文件路径到剪贴板，有空格时用单引号包裹
+              const formattedPath = absolutePath.includes(' ') ? `'${absolutePath}'` : absolutePath;
+              navigator.clipboard.writeText(formattedPath).catch(console.error);
 
               const pathParts = absolutePath.split(/[/\\]/);
               pathParts.pop(); // 移除文件名
