@@ -54,4 +54,4 @@ jobs:
           tag_name: ${{ steps.tag.outputs.tag }}
           body: ${{ steps.changelog.outputs.content }}
           files: |
-            dist/*.zip
+            dist-zip/*
