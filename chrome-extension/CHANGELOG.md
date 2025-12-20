@@ -1,5 +1,16 @@
 # chrome-extension
 
+## 1.1.6
+
+### Patch Changes
+
+- 修复下载功能问题：
+  - 文件名含斜杠时不再创建子文件夹
+  - 优化剪贴板路径格式（去掉@前缀，仅空格路径加引号）
+  - @extension/env@1.1.6
+  - @extension/shared@1.1.6
+  - @extension/storage@1.1.6
+
 ## 1.1.5
 
 ### Patch Changes
