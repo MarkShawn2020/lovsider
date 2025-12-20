@@ -453,13 +453,16 @@ datetime: ${datetime}
     }
   };
 
+  const sanitizeFilename = (name: string): string =>
+    // 替换文件名中的非法字符: / \ : * ? " < > |
+    name.replace(/[/\\:*?"<>|]/g, '-');
   const downloadMarkdown = async () => {
     if (!markdownOutput) return;
 
     try {
       // 从 markdown 内容中提取 title
       const title = extractTitleFromMarkdown(markdownOutput);
-      const filename = `${title}.md`;
+      const filename = `${sanitizeFilename(title)}.md`;
 
       // 获取下载设置
       const settings = await downloadSettingsStorage.getSettings();
@@ -501,6 +504,10 @@ datetime: ${datetime}
             if (downloadedFile.filename) {
               // 提取相对于 Downloads 文件夹的路径
               const absolutePath = downloadedFile.filename;
+
+              // 复制文件路径到剪贴板，格式：@"$FILE_PATH"
+              navigator.clipboard.writeText(`@"${absolutePath}"`).catch(console.error);
+
               const pathParts = absolutePath.split(/[/\\]/);
               pathParts.pop(); // 移除文件名
 
