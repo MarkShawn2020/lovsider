@@ -73,13 +73,21 @@ export const ClaudeExportPanel = () => {
       const detectedChatId = match[1];
       setChatId(detectedChatId);
 
-      // 尝试从页面获取 orgId
-      const response = await chrome.tabs.sendMessage(tab.id!, { action: 'getClaudeOrgId' });
-      if (response?.orgId) {
-        setOrgId(response.orgId);
-        await claudeExportStorage.setLastOrgId(response.orgId);
-      } else {
-        // 尝试使用缓存的 orgId
+      // 尝试从页面获取 orgId（单独 try-catch，失败不影响整体检测）
+      try {
+        const response = await chrome.tabs.sendMessage(tab.id!, { action: 'getClaudeOrgId' });
+        if (response?.orgId) {
+          setOrgId(response.orgId);
+          await claudeExportStorage.setLastOrgId(response.orgId);
+        } else {
+          // 尝试使用缓存的 orgId
+          const cachedOrgId = await claudeExportStorage.getLastOrgId();
+          if (cachedOrgId) {
+            setOrgId(cachedOrgId);
+          }
+        }
+      } catch {
+        // content script 可能未准备好，尝试使用缓存的 orgId
         const cachedOrgId = await claudeExportStorage.getLastOrgId();
         if (cachedOrgId) {
           setOrgId(cachedOrgId);
@@ -104,7 +112,7 @@ export const ClaudeExportPanel = () => {
 
     // 监听标签页变化
     const handleTabUpdate = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
-      if (changeInfo.url) {
+      if (changeInfo.url || changeInfo.title) {
         detectClaudePage();
       }
     };
@@ -287,7 +295,9 @@ messages: ${data.chat_messages?.length || 0}
       saveAs: true,
     };
 
-    if (settings.lastUsedPath && settings.lastUsedPath !== 'Downloads') {
+    // 只有在 Downloads 子目录时才设置路径
+    // __CHROME_DEFAULT__ 或空字符串表示让 Chrome 使用它自己记住的位置
+    if (settings.lastUsedPath && settings.lastUsedPath !== '__CHROME_DEFAULT__') {
       downloadOptions.filename = `${settings.lastUsedPath}/${filename}`;
     }
 
@@ -310,11 +320,14 @@ messages: ${data.chat_messages?.length || 0}
                 const downloadsIndex = pathParts.findIndex(
                   part => part.toLowerCase() === 'downloads' || part === '下载',
                 );
-                if (downloadsIndex !== -1 && downloadsIndex < pathParts.length - 1) {
-                  const relativePath = pathParts.slice(downloadsIndex + 1).join('/');
-                  if (relativePath) {
-                    downloadSettingsStorage.setLastUsedPath(relativePath);
-                  }
+                if (downloadsIndex !== -1) {
+                  // 在 Downloads 目录下：提取相对路径（根目录则为空字符串）
+                  const relativePath =
+                    downloadsIndex < pathParts.length - 1 ? pathParts.slice(downloadsIndex + 1).join('/') : '';
+                  downloadSettingsStorage.setLastUsedPath(relativePath);
+                } else {
+                  // 在 Downloads 之外：用特殊标记，让 Chrome 使用它记住的位置
+                  downloadSettingsStorage.setLastUsedPath('__CHROME_DEFAULT__');
                 }
               }
               chrome.downloads.onChanged.removeListener(onChanged);

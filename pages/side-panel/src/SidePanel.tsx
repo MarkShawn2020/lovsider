@@ -487,9 +487,11 @@ datetime: ${datetime}
       filename: filename,
     };
 
-    // 始终显示保存对话框，使用记忆的路径作为默认位置
+    // 始终显示保存对话框
     downloadOptions.saveAs = true;
-    if (settings.lastUsedPath && settings.lastUsedPath !== 'Downloads') {
+    // 只有在 Downloads 子目录时才设置路径，让 Chrome 打开到该子目录
+    // __CHROME_DEFAULT__ 或空字符串表示让 Chrome 使用它自己记住的位置
+    if (settings.lastUsedPath && settings.lastUsedPath !== '__CHROME_DEFAULT__') {
       downloadOptions.filename = `${settings.lastUsedPath}/${filename}`;
     }
 
@@ -516,15 +518,14 @@ datetime: ${datetime}
               // 查找 Downloads 文件夹在路径中的位置
               const downloadsIndex = pathParts.findIndex(part => part.toLowerCase() === 'downloads' || part === '下载');
 
-              let relativePath = '';
-              if (downloadsIndex !== -1 && downloadsIndex < pathParts.length - 1) {
-                // 提取 Downloads 之后的路径部分
-                relativePath = pathParts.slice(downloadsIndex + 1).join('/');
-              }
-
-              // 只有当有有效的相对路径时才保存
-              if (relativePath) {
+              if (downloadsIndex !== -1) {
+                // 在 Downloads 目录下：提取相对路径（根目录则为空字符串）
+                const relativePath =
+                  downloadsIndex < pathParts.length - 1 ? pathParts.slice(downloadsIndex + 1).join('/') : '';
                 await downloadSettingsStorage.setLastUsedPath(relativePath);
+              } else {
+                // 在 Downloads 之外：用特殊标记，让 Chrome 使用它记住的位置
+                await downloadSettingsStorage.setLastUsedPath('__CHROME_DEFAULT__');
               }
             }
           }
