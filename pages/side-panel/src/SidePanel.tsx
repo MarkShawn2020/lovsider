@@ -2,6 +2,7 @@ import '@src/SidePanel.css';
 import { ClaudeExportPanel } from './components/ClaudeExportPanel';
 import { FloatingBadgePanel } from './components/FloatingBadgePanel';
 import { SitePresetsPanel } from './components/SitePresetsPanel';
+import { parseAIPlatformContent } from './utils/ai-platform-parser';
 import { useStorage, withErrorBoundary, withSuspense, commandProcessor } from '@extension/shared';
 import {
   exampleThemeStorage,
@@ -31,7 +32,7 @@ import {
   CrossCircledIcon,
   KeyboardIcon,
 } from '@radix-ui/react-icons';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { CommandResult } from '@extension/shared';
 
 // 下载设置面板组件
@@ -160,6 +161,14 @@ const DownloadSettingsPanel = ({ onClose }: { onClose: () => void }) => {
   );
 };
 
+// 预设匹配信息类型
+interface PresetMatchInfo {
+  presetId?: string;
+  presetName?: string;
+  matchedPattern?: string;
+  matchedSelector?: string;
+}
+
 // 先创建一个简单的测试版本
 const SimpleCaptureModule = () => {
   const [isSelecting, setIsSelecting] = useState(false);
@@ -174,6 +183,7 @@ const SimpleCaptureModule = () => {
   const [markdownCopied, setMarkdownCopied] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [exportAction, setExportAction] = useState<'download' | 'copy'>('download');
+  const [presetMatch, setPresetMatch] = useState<PresetMatchInfo | null>(null);
 
   // 初始化和URL监听
   useEffect(() => {
@@ -256,13 +266,14 @@ const SimpleCaptureModule = () => {
     const messageListener = (request: unknown, _sender: unknown, sendResponse: (response?: unknown) => void) => {
       if (!request || typeof request !== 'object') return;
 
-      const msg = request as { action?: string; markdown?: string; domPath?: string };
+      const msg = request as { action?: string; markdown?: string; domPath?: string; presetMatch?: PresetMatchInfo };
       if (msg.action === 'elementSelected') {
         const newPath = msg.domPath || '';
         const newMarkdown = msg.markdown || '';
 
         setMarkdownOutput(newMarkdown);
         setDomPath(newPath);
+        setPresetMatch(msg.presetMatch || null);
         setIsSelecting(false);
 
         // 保存DOM路径
@@ -277,6 +288,7 @@ const SimpleCaptureModule = () => {
 
         setMarkdownOutput(newMarkdown);
         setDomPath(newPath);
+        setPresetMatch(msg.presetMatch || null);
 
         // 保存DOM路径
         if (newPath && currentUrl) {
@@ -374,6 +386,16 @@ const SimpleCaptureModule = () => {
 
   const smartSelect = async () => {
     try {
+      // 先尝试 AI 平台解析（API 模式）
+      const aiResult = await parseAIPlatformContent();
+      if (aiResult) {
+        setMarkdownOutput(aiResult.markdown);
+        setPresetMatch(aiResult.presetMatch);
+        setDomPath(''); // AI 平台不使用 DOM 路径
+        return;
+      }
+
+      // 非 AI 平台，使用 DOM 选择模式
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       await chrome.tabs.sendMessage(tab.id!, { action: 'smartSelect' });
       setIsSelecting(true);
@@ -427,6 +449,9 @@ const SimpleCaptureModule = () => {
     return { frontmatter, content };
   };
 
+  // 缓存解析结果，避免重复计算
+  const parsedMarkdown = useMemo(() => parseFrontmatter(markdownOutput), [markdownOutput]);
+
   const buildMarkdown = (frontmatter: Record<string, string>, content: string): string => {
     const fm = Object.entries(frontmatter)
       .map(([k, v]) => `${k}: ${v}`)
@@ -436,14 +461,12 @@ const SimpleCaptureModule = () => {
   };
 
   const updateFrontmatterField = (key: string, value: string) => {
-    const { frontmatter, content } = parseFrontmatter(markdownOutput);
-    frontmatter[key] = value;
-    setMarkdownOutput(buildMarkdown(frontmatter, content));
+    const newFrontmatter = { ...parsedMarkdown.frontmatter, [key]: value };
+    setMarkdownOutput(buildMarkdown(newFrontmatter, parsedMarkdown.content));
   };
 
   const updateContent = (newContent: string) => {
-    const { frontmatter } = parseFrontmatter(markdownOutput);
-    setMarkdownOutput(buildMarkdown(frontmatter, newContent));
+    setMarkdownOutput(buildMarkdown(parsedMarkdown.frontmatter, newContent));
   };
 
   const generateFrontmatter = (title: string, source: string): string => {
@@ -889,7 +912,14 @@ datetime: ${datetime}
           <div className="border-border bg-card flex h-full flex-col rounded-xl border">
             {/* 标题栏 */}
             <div className="border-border flex items-center justify-between border-b px-4 py-3">
-              <h3 className="text-card-foreground text-sm font-medium">Markdown 内容</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-card-foreground text-sm font-medium">Markdown 内容</h3>
+                {presetMatch?.presetName && (
+                  <span className="bg-primary/10 text-primary rounded px-2 py-0.5 text-xs">
+                    {presetMatch.presetName}
+                  </span>
+                )}
+              </div>
               {/* Split Button */}
               <div className="relative">
                 <div className="flex">
@@ -943,39 +973,34 @@ datetime: ${datetime}
             </div>
 
             {/* Frontmatter 表单 */}
-            {(() => {
-              const { frontmatter, content } = parseFrontmatter(markdownOutput);
-              return (
-                <div className="flex flex-1 flex-col overflow-hidden">
-                  <div className="border-border space-y-2 border-b p-3">
-                    <div className="flex items-center gap-2">
-                      <label className="text-muted-foreground w-16 shrink-0 text-xs">标题</label>
-                      <input
-                        type="text"
-                        value={frontmatter.title || ''}
-                        onChange={e => updateFrontmatterField('title', e.target.value)}
-                        className="border-input bg-background text-foreground flex-1 rounded border px-2 py-1 text-xs focus:outline-none"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <label className="text-muted-foreground w-16 shrink-0 text-xs">来源</label>
-                      <input
-                        type="text"
-                        value={frontmatter.source || ''}
-                        onChange={e => updateFrontmatterField('source', e.target.value)}
-                        className="border-input bg-background text-foreground flex-1 rounded border px-2 py-1 text-xs focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                  {/* 正文编辑 */}
-                  <textarea
-                    value={content}
-                    onChange={e => updateContent(e.target.value)}
-                    className="bg-muted text-foreground flex-1 resize-none overflow-auto p-4 font-mono text-xs focus:outline-none"
+            <div className="flex flex-1 flex-col overflow-hidden">
+              <div className="border-border space-y-2 border-b p-3">
+                <div className="flex items-center gap-2">
+                  <label className="text-muted-foreground w-16 shrink-0 text-xs">标题</label>
+                  <input
+                    type="text"
+                    value={parsedMarkdown.frontmatter.title || ''}
+                    onChange={e => updateFrontmatterField('title', e.target.value)}
+                    className="border-input bg-background text-foreground flex-1 rounded border px-2 py-1 text-xs focus:outline-none"
                   />
                 </div>
-              );
-            })()}
+                <div className="flex items-center gap-2">
+                  <label className="text-muted-foreground w-16 shrink-0 text-xs">来源</label>
+                  <input
+                    type="text"
+                    value={parsedMarkdown.frontmatter.source || ''}
+                    onChange={e => updateFrontmatterField('source', e.target.value)}
+                    className="border-input bg-background text-foreground flex-1 rounded border px-2 py-1 text-xs focus:outline-none"
+                  />
+                </div>
+              </div>
+              {/* 正文编辑 */}
+              <textarea
+                value={parsedMarkdown.content}
+                onChange={e => updateContent(e.target.value)}
+                className="bg-muted text-foreground flex-1 resize-none overflow-auto p-4 font-mono text-xs focus:outline-none"
+              />
+            </div>
           </div>
         ) : (
           <div className="bg-muted flex h-full flex-col items-center justify-center rounded-xl py-12">

@@ -5,6 +5,7 @@ import {
   ElementMarker,
   FloatingBadge,
   FloatingBadgeSimple,
+  AIExportBadge,
   safeSendMessage,
 } from '@extension/shared';
 import type { FormFillRequest, SitePreset, FloatingBadgeConfig } from '@extension/shared';
@@ -14,44 +15,74 @@ console.debug('[Lovsider] Content script loaded');
 // 内置预设（保持与SitePresetsPanel.tsx中的一致）
 const BUILT_IN_PRESETS: SitePreset[] = [
   {
+    id: 'wechat',
+    name: '微信公众号',
     patterns: ['https://mp.weixin.qq.com/s/', 'mp.weixin.qq.com/s/'],
     selectors: ['#img-content'],
     priority: 10,
   },
   {
+    id: 'zhihu',
+    name: '知乎',
     patterns: ['zhihu.com/question', 'zhihu.com/p/'],
     selectors: ['.Post-RichTextContainer', '.QuestionAnswer-content', '.RichContent-inner'],
     priority: 10,
   },
   {
+    id: 'juejin',
+    name: '掘金',
     patterns: ['juejin.cn/post', 'juejin.im/post'],
     selectors: ['.article-content', '.markdown-body'],
     priority: 10,
   },
   {
+    id: 'medium',
+    name: 'Medium',
     patterns: ['medium.com'],
     selectors: ['article', '.meteredContent', 'main article'],
     priority: 10,
   },
   {
+    id: 'devto',
+    name: 'Dev.to',
     patterns: ['dev.to'],
     selectors: ['#article-body', '.crayons-article__body'],
     priority: 10,
   },
   {
+    id: 'stackoverflow',
+    name: 'Stack Overflow',
     patterns: ['stackoverflow.com/questions'],
     selectors: ['.answercell', '.question', '.post-text'],
     priority: 10,
   },
   {
+    id: 'github',
+    name: 'GitHub',
     patterns: ['github.com'],
     selectors: ['.markdown-body', '#readme', '.comment-body'],
     priority: 10,
   },
   {
+    id: 'wikipedia',
+    name: 'Wikipedia',
     patterns: ['wikipedia.org/wiki'],
     selectors: ['#mw-content-text', '.mw-parser-output'],
     priority: 10,
+  },
+  {
+    id: 'claude',
+    name: 'Claude AI',
+    patterns: ['claude.ai/chat'],
+    selectors: ['[data-testid="conversation-turn-first"]', '.font-claude-message', '[class*="prose"]'],
+    priority: 15,
+  },
+  {
+    id: 'aistudio',
+    name: 'Google AI Studio',
+    patterns: ['aistudio.google.com/prompts'],
+    selectors: ['[data-turn-role]', '.response-container', 'ms-chat-turn'],
+    priority: 15,
   },
 ];
 
@@ -66,6 +97,7 @@ class LovsiderElementSelector extends ElementSelector {
         markdown: data.markdown,
         slug: data.slug,
         domPath: data.domPath,
+        presetMatch: data.presetMatch,
       });
     }
 
@@ -85,6 +117,7 @@ class LovsiderElementSelector extends ElementSelector {
         markdown: data.markdown,
         slug: data.slug,
         domPath: data.domPath,
+        presetMatch: data.presetMatch,
       });
     }
   }
@@ -796,10 +829,27 @@ chrome.runtime?.onMessage?.addListener((request, sender, sendResponse) => {
   return false;
 });
 
+// 初始化 AI 导出按钮（仅在 AI 平台页面显示）
+let aiExportBadge: AIExportBadge | null = null;
+
+function initializeAIExportBadge() {
+  // 检测是否是 AI 平台页面
+  if (AIExportBadge.detectPlatform()) {
+    aiExportBadge = new AIExportBadge();
+    aiExportBadge.init();
+  }
+}
+
 // 页面加载完成后初始化
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeFloatingBadge);
+  document.addEventListener('DOMContentLoaded', () => {
+    initializeFloatingBadge();
+    initializeAIExportBadge();
+  });
 } else {
   // 延迟初始化，避免影响页面加载
-  setTimeout(initializeFloatingBadge, 500);
+  setTimeout(() => {
+    initializeFloatingBadge();
+    initializeAIExportBadge();
+  }, 500);
 }

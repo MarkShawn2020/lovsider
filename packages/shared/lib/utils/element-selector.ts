@@ -6,12 +6,22 @@ export interface ElementSelectionResult {
   slug: string;
   element: Element;
   domPath: string;
+  presetMatch?: PresetMatchInfo;
 }
 
 export interface SitePreset {
+  id?: string;
+  name?: string;
   patterns: string[];
   selectors: string[];
   priority?: number;
+}
+
+export interface PresetMatchInfo {
+  presetId?: string;
+  presetName?: string;
+  matchedPattern?: string;
+  matchedSelector?: string;
 }
 
 export interface ElementSelectorOptions {
@@ -30,6 +40,8 @@ export class ElementSelector {
   private originalStyles = new Map<Element, { outline: string; backgroundColor: string }>();
   // 记录父节点最后访问的子节点，用于导航时返回原位置
   private lastVisitedChild = new WeakMap<Element, Element>();
+  // 记录最后匹配的预设信息
+  private lastPresetMatch: PresetMatchInfo | null = null;
 
   private mouseOverHandler?: (e: MouseEvent) => void;
   private mouseOutHandler?: (e: MouseEvent) => void;
@@ -374,7 +386,13 @@ export class ElementSelector {
       slug,
       element,
       domPath,
+      presetMatch: this.lastPresetMatch || undefined,
     };
+  }
+
+  // 获取当前预设匹配信息
+  getPresetMatchInfo(): PresetMatchInfo | null {
+    return this.lastPresetMatch;
   }
 
   private extractSlugFromMarkdown(markdown: string): string {
@@ -491,6 +509,9 @@ export class ElementSelector {
   }
 
   private findMainContentElement(): Element | null {
+    // 清除之前的预设匹配信息
+    this.lastPresetMatch = null;
+
     // 首先尝试使用网站预设
     const presetElement = this.findElementByPresets();
     if (presetElement) {
@@ -550,6 +571,13 @@ export class ElementSelector {
 
             if (isValid) {
               console.log(`[ElementSelector] ✅ 使用预设选择器: ${selector} (匹配模式: ${preset.patterns.join(', ')})`);
+              // 记录匹配的预设信息
+              this.lastPresetMatch = {
+                presetId: preset.id,
+                presetName: preset.name,
+                matchedPattern,
+                matchedSelector: selector,
+              };
               return element;
             }
           } else {
