@@ -15,6 +15,28 @@ import {
 import { useState, useEffect, useCallback } from 'react';
 import type { ClaudeExportOptions } from '@extension/storage';
 
+// 支持的 AI 平台
+type AIPlatform = 'claude' | 'google-ai-studio';
+
+// 统一的消息格式
+interface UnifiedMessage {
+  role: 'human' | 'assistant';
+  text: string;
+  thinking?: string;
+  toolCalls?: Array<{ name: string; input: unknown }>;
+  toolResults?: string[];
+}
+
+interface UnifiedChatData {
+  platform: AIPlatform;
+  id: string;
+  title: string;
+  model?: string;
+  messages: UnifiedMessage[];
+  sourceUrl: string;
+  exportedAt: string;
+}
+
 // Claude API 响应类型
 interface ClaudeMessage {
   uuid: string;
@@ -43,7 +65,17 @@ interface ClaudeChatResponse {
   chat_messages: ClaudeMessage[];
 }
 
+// Google AI Studio 响应类型（基于实际 JSON 结构）
+type GoogleAIStudioResponse = unknown[][];
+
 type ExportStatus = 'idle' | 'detecting' | 'ready' | 'exporting' | 'success' | 'error';
+
+// 平台检测结果
+interface PlatformDetection {
+  platform: AIPlatform;
+  id: string;
+  title: string;
+}
 
 interface ExportResult {
   filename: string;
@@ -51,11 +83,128 @@ interface ExportResult {
   fileSize: string;
 }
 
+// 平台名称映射
+const PLATFORM_NAMES: Record<AIPlatform, string> = {
+  claude: 'Claude',
+  'google-ai-studio': 'Google AI Studio',
+};
+
+// 解析 Google AI Studio 响应为统一格式
+function parseGoogleAIStudioResponse(data: GoogleAIStudioResponse, url: string): UnifiedChatData {
+  const root = data[0] as unknown[];
+  const promptId = (root[0] as string) || '';
+  const config = root[3] as unknown[];
+  const metadata = root[4] as unknown[];
+
+  const model = config?.[2] as string | undefined;
+  const title = (metadata?.[0] as string) || '未命名对话';
+
+  const messages: UnifiedMessage[] = [];
+
+  // 对话在索引 13（之前以为在 11）
+  const conversations = (root[13] as unknown[][]) || (root[11] as unknown[][]) || [];
+
+  // 遍历对话轮次
+  for (const turn of conversations) {
+    if (!Array.isArray(turn)) continue;
+
+    // 每轮可能包含多条消息
+    for (const msg of turn) {
+      if (!Array.isArray(msg)) continue;
+
+      const text = (msg[0] as string) || '';
+      const role = msg[8] as string;
+
+      // 只要有角色就处理（允许空文本）
+      if (!role || (role !== 'user' && role !== 'model')) continue;
+
+      const unifiedRole = role === 'user' ? 'human' : 'assistant';
+
+      // 提取 thinking（对于 model 消息，可能在索引 29）
+      let thinking: string | undefined;
+      const thinkingBlocks = msg[29] as unknown[] | undefined;
+      if (Array.isArray(thinkingBlocks)) {
+        const thinkingTexts = thinkingBlocks
+          .filter(b => Array.isArray(b) && b[1])
+          .map(b => (b as unknown[])[1] as string);
+        if (thinkingTexts.length > 0) {
+          thinking = thinkingTexts.join('\n\n');
+        }
+      }
+
+      // 跳过空消息（文本和 thinking 都为空）
+      if (!text && !thinking) continue;
+
+      messages.push({
+        role: unifiedRole,
+        text,
+        thinking,
+      });
+    }
+  }
+
+  return {
+    platform: 'google-ai-studio',
+    id: promptId,
+    title,
+    model,
+    messages,
+    sourceUrl: url,
+    exportedAt: new Date().toISOString(),
+  };
+}
+
+// 解析 Claude 响应为统一格式
+function parseClaudeResponse(data: ClaudeChatResponse, url: string): UnifiedChatData {
+  const messages: UnifiedMessage[] = [];
+
+  for (const msg of data.chat_messages || []) {
+    const unifiedMsg: UnifiedMessage = {
+      role: msg.sender,
+      text: '',
+    };
+
+    if (msg.content && Array.isArray(msg.content)) {
+      const textParts: string[] = [];
+      const toolCalls: Array<{ name: string; input: unknown }> = [];
+      const toolResults: string[] = [];
+
+      for (const block of msg.content) {
+        if (block.type === 'text' && block.text) {
+          textParts.push(block.text);
+        } else if (block.type === 'thinking' && block.thinking) {
+          unifiedMsg.thinking = block.thinking;
+        } else if (block.type === 'tool_use' && block.tool_use) {
+          toolCalls.push({ name: block.tool_use.name, input: block.tool_use.input });
+        } else if (block.type === 'tool_result' && block.tool_result) {
+          toolResults.push(block.tool_result.content);
+        }
+      }
+
+      unifiedMsg.text = textParts.join('\n');
+      if (toolCalls.length > 0) unifiedMsg.toolCalls = toolCalls;
+      if (toolResults.length > 0) unifiedMsg.toolResults = toolResults;
+    } else if (msg.text) {
+      unifiedMsg.text = msg.text;
+    }
+
+    messages.push(unifiedMsg);
+  }
+
+  return {
+    platform: 'claude',
+    id: data.uuid,
+    title: data.name || '未命名对话',
+    messages,
+    sourceUrl: url,
+    exportedAt: new Date().toISOString(),
+  };
+}
+
 export const ClaudeExportPanel = () => {
   const [status, setStatus] = useState<ExportStatus>('detecting');
-  const [chatId, setChatId] = useState<string | null>(null);
-  const [orgId, setOrgId] = useState<string | null>(null);
-  const [chatTitle, setChatTitle] = useState<string>('');
+  const [platform, setPlatform] = useState<PlatformDetection | null>(null);
+  const [orgId, setOrgId] = useState<string | null>(null); // Claude 专用
   const [error, setError] = useState<string>('');
   const [exportResult, setExportResult] = useState<ExportResult | null>(null);
   const [showOptions, setShowOptions] = useState(false);
@@ -66,8 +215,8 @@ export const ClaudeExportPanel = () => {
   });
   const [progress, setProgress] = useState(0);
 
-  // 检测当前页面是否是 Claude 聊天页面
-  const detectClaudePage = useCallback(async () => {
+  // 检测当前页面是否是支持的 AI 聊天页面
+  const detectAIPage = useCallback(async () => {
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab.url) {
@@ -76,48 +225,70 @@ export const ClaudeExportPanel = () => {
       }
 
       // 匹配 claude.ai/chat/{chatId}
-      const match = tab.url.match(/^https:\/\/claude\.ai\/chat\/([a-f0-9-]+)/);
-      if (!match) {
-        setStatus('idle');
+      const claudeMatch = tab.url.match(/^https:\/\/claude\.ai\/chat\/([a-f0-9-]+)/);
+      if (claudeMatch) {
+        const chatId = claudeMatch[1];
+        setPlatform({ platform: 'claude', id: chatId, title: '' });
+
+        // 尝试获取 Claude orgId
+        try {
+          const response = await chrome.tabs.sendMessage(tab.id!, { action: 'getClaudeOrgId' });
+          if (response?.orgId) {
+            setOrgId(response.orgId);
+            await claudeExportStorage.setLastOrgId(response.orgId);
+          } else {
+            const cachedOrgId = await claudeExportStorage.getLastOrgId();
+            if (cachedOrgId) setOrgId(cachedOrgId);
+          }
+        } catch {
+          const cachedOrgId = await claudeExportStorage.getLastOrgId();
+          if (cachedOrgId) setOrgId(cachedOrgId);
+        }
+
+        const title = tab.title?.replace(' - Claude', '').trim() || '未命名对话';
+        setPlatform({ platform: 'claude', id: chatId, title });
+        setStatus('ready');
         return;
       }
 
-      const detectedChatId = match[1];
-      setChatId(detectedChatId);
+      // 匹配 aistudio.google.com/prompts/{promptId}
+      const googleMatch = tab.url.match(/^https:\/\/aistudio\.google\.com\/prompts\/([a-zA-Z0-9_-]+)/);
+      if (googleMatch) {
+        const promptId = googleMatch[1];
+        // 先用浏览器标题，然后异步获取真正的标题
+        const tempTitle = tab.title?.replace(' - Google AI Studio', '').trim() || '未命名对话';
+        setPlatform({ platform: 'google-ai-studio', id: promptId, title: tempTitle });
+        setStatus('ready');
 
-      // 尝试从页面获取 orgId（单独 try-catch，失败不影响整体检测）
-      try {
-        const response = await chrome.tabs.sendMessage(tab.id!, { action: 'getClaudeOrgId' });
-        if (response?.orgId) {
-          setOrgId(response.orgId);
-          await claudeExportStorage.setLastOrgId(response.orgId);
-        } else {
-          // 尝试使用缓存的 orgId
-          const cachedOrgId = await claudeExportStorage.getLastOrgId();
-          if (cachedOrgId) {
-            setOrgId(cachedOrgId);
-          }
-        }
-      } catch {
-        // content script 可能未准备好，尝试使用缓存的 orgId
-        const cachedOrgId = await claudeExportStorage.getLastOrgId();
-        if (cachedOrgId) {
-          setOrgId(cachedOrgId);
-        }
+        // 异步获取真正的标题
+        chrome.tabs
+          .sendMessage(tab.id!, { action: 'fetchGoogleAIStudioChat', promptId })
+          .then(response => {
+            if (response?.success && response.data) {
+              const root = response.data[0] as unknown[];
+              const metadata = root?.[4] as unknown[];
+              const realTitle = (metadata?.[0] as string) || tempTitle;
+              if (realTitle !== tempTitle) {
+                setPlatform({ platform: 'google-ai-studio', id: promptId, title: realTitle });
+              }
+            }
+          })
+          .catch(() => {
+            // 忽略错误，保持临时标题
+          });
+        return;
       }
 
-      // 获取页面标题
-      setChatTitle(tab.title?.replace(' - Claude', '').trim() || '未命名对话');
-      setStatus('ready');
+      setStatus('idle');
     } catch (err) {
-      console.error('检测 Claude 页面失败:', err);
+      console.error('检测 AI 页面失败:', err);
       setStatus('idle');
     }
   }, []);
 
   // 初始化
   useEffect(() => {
-    detectClaudePage();
+    detectAIPage();
 
     // 加载保存的选项
     claudeExportStorage.getOptions().then(setOptions);
@@ -125,12 +296,12 @@ export const ClaudeExportPanel = () => {
     // 监听标签页变化
     const handleTabUpdate = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
       if (changeInfo.url || changeInfo.title) {
-        detectClaudePage();
+        detectAIPage();
       }
     };
 
     const handleTabActivated = () => {
-      detectClaudePage();
+      detectAIPage();
     };
 
     chrome.tabs.onUpdated.addListener(handleTabUpdate);
@@ -140,7 +311,7 @@ export const ClaudeExportPanel = () => {
       chrome.tabs.onUpdated.removeListener(handleTabUpdate);
       chrome.tabs.onActivated.removeListener(handleTabActivated);
     };
-  }, [detectClaudePage]);
+  }, [detectAIPage]);
 
   // 更新选项
   const updateOption = async (key: keyof ClaudeExportOptions, value: boolean) => {
@@ -149,65 +320,86 @@ export const ClaudeExportPanel = () => {
     await claudeExportStorage.updateOptions({ [key]: value });
   };
 
-  // 获取聊天数据
-  const fetchChatData = async (): Promise<ClaudeChatResponse | null> => {
-    if (!chatId || !orgId) {
-      throw new Error('缺少必要的 chatId 或 orgId');
-    }
+  // 获取聊天数据（统一格式）
+  const fetchChatData = async (): Promise<UnifiedChatData | null> => {
+    if (!platform) throw new Error('未检测到 AI 平台');
 
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab.id) throw new Error('无法获取当前标签页');
+    if (!tab.id || !tab.url) throw new Error('无法获取当前标签页');
 
-    // 在页面上下文中执行 fetch（自动携带 cookies）
-    const response = await chrome.tabs.sendMessage(tab.id, {
-      action: 'fetchClaudeChat',
-      chatId,
-      orgId,
-    });
+    if (platform.platform === 'claude') {
+      if (!orgId) throw new Error('缺少必要的 orgId');
 
-    if (!response.success) {
-      throw new Error(response.error || '获取聊天数据失败');
+      const response = await chrome.tabs.sendMessage(tab.id, {
+        action: 'fetchClaudeChat',
+        chatId: platform.id,
+        orgId,
+      });
+
+      if (!response.success) {
+        throw new Error(response.error || '获取聊天数据失败');
+      }
+
+      return parseClaudeResponse(response.data, tab.url);
     }
 
-    return response.data;
+    if (platform.platform === 'google-ai-studio') {
+      const response = await chrome.tabs.sendMessage(tab.id, {
+        action: 'fetchGoogleAIStudioChat',
+        promptId: platform.id,
+      });
+
+      if (!response.success) {
+        throw new Error(response.error || '获取聊天数据失败');
+      }
+
+      return parseGoogleAIStudioResponse(response.data, tab.url);
+    }
+
+    throw new Error('不支持的平台');
   };
 
-  // 转换为 Markdown
-  const convertToMarkdown = (data: ClaudeChatResponse): string => {
-    const date = new Date().toISOString();
-    const title = data.name || chatTitle || '未命名对话';
+  // 转换为 Markdown（统一格式）
+  const convertToMarkdown = (data: UnifiedChatData): string => {
+    const platformName = PLATFORM_NAMES[data.platform];
 
     let markdown = `---
-title: ${title}
-source: https://claude.ai/chat/${data.uuid}
-exported: ${date}
-messages: ${data.chat_messages?.length || 0}
+title: ${data.title}
+platform: ${platformName}
+${data.model ? `model: ${data.model}\n` : ''}source: ${data.sourceUrl}
+exported: ${data.exportedAt}
+messages: ${data.messages.length}
 ---
 
 `;
 
-    if (!data.chat_messages) return markdown;
-
-    for (const msg of data.chat_messages) {
-      const role = msg.sender === 'human' ? 'Human' : 'Assistant';
+    for (const msg of data.messages) {
+      const role = msg.role === 'human' ? 'Human' : 'Assistant';
       markdown += `## ${role}\n\n`;
 
-      if (msg.content && Array.isArray(msg.content)) {
-        for (const block of msg.content) {
-          if (block.type === 'text' && block.text) {
-            markdown += `${block.text}\n\n`;
-          } else if (block.type === 'thinking' && block.thinking && options.includeThinking) {
-            markdown += `<thinking>\n${block.thinking}\n</thinking>\n\n`;
-          } else if (block.type === 'tool_use' && block.tool_use && options.includeToolCalls) {
-            markdown += `**Tool Call: ${block.tool_use.name}**\n\`\`\`json\n${JSON.stringify(block.tool_use.input, null, 2)}\n\`\`\`\n\n`;
-          } else if (block.type === 'tool_result' && block.tool_result && options.includeToolCalls) {
-            const content = block.tool_result.content;
-            const truncated = content.length > 500 ? content.slice(0, 500) + '...(truncated)' : content;
-            markdown += `**Tool Result:**\n\`\`\`\n${truncated}\n\`\`\`\n\n`;
-          }
-        }
-      } else if (msg.text) {
+      // 添加 thinking
+      if (msg.thinking && options.includeThinking) {
+        markdown += `<thinking>\n${msg.thinking}\n</thinking>\n\n`;
+      }
+
+      // 添加正文
+      if (msg.text) {
         markdown += `${msg.text}\n\n`;
+      }
+
+      // 添加工具调用
+      if (msg.toolCalls && options.includeToolCalls) {
+        for (const tool of msg.toolCalls) {
+          markdown += `**Tool Call: ${tool.name}**\n\`\`\`json\n${JSON.stringify(tool.input, null, 2)}\n\`\`\`\n\n`;
+        }
+      }
+
+      // 添加工具结果
+      if (msg.toolResults && options.includeToolCalls) {
+        for (const result of msg.toolResults) {
+          const truncated = result.length > 500 ? result.slice(0, 500) + '...(truncated)' : result;
+          markdown += `**Tool Result:**\n\`\`\`\n${truncated}\n\`\`\`\n\n`;
+        }
       }
     }
 
@@ -244,9 +436,8 @@ messages: ${data.chat_messages?.length || 0}
       const markdown = convertToMarkdown(data);
 
       setProgress(80);
-      const title = data.name || chatTitle || 'claude-chat';
       const dateStr = new Date().toISOString().split('T')[0];
-      const filename = `${sanitizeFilename(title)}-${dateStr}.md`;
+      const filename = `${sanitizeFilename(data.title)}-${dateStr}.md`;
 
       // 下载文件
       await downloadFile(filename, markdown, 'text/markdown');
@@ -254,7 +445,7 @@ messages: ${data.chat_messages?.length || 0}
       setProgress(100);
       setExportResult({
         filename,
-        messageCount: data.chat_messages?.length || 0,
+        messageCount: data.messages.length,
         fileSize: formatFileSize(new Blob([markdown]).size),
       });
       setStatus('success');
@@ -278,14 +469,15 @@ messages: ${data.chat_messages?.length || 0}
 
       setProgress(70);
       const jsonStr = JSON.stringify(data, null, 2);
-      const filename = `claude-chat-${chatId?.slice(0, 8)}.json`;
+      const prefix = platform?.platform === 'claude' ? 'claude-chat' : 'gemini-chat';
+      const filename = `${prefix}-${platform?.id?.slice(0, 8)}.json`;
 
       await downloadFile(filename, jsonStr, 'application/json');
 
       setProgress(100);
       setExportResult({
         filename,
-        messageCount: data.chat_messages?.length || 0,
+        messageCount: data.messages.length,
         fileSize: formatFileSize(new Blob([jsonStr]).size),
       });
       setStatus('success');
@@ -385,13 +577,13 @@ messages: ${data.chat_messages?.length || 0}
     </div>
   );
 
-  // 非 Claude 页面时显示提示
+  // 非 AI 页面时显示提示
   if (status === 'idle') {
     return (
       <div className="bg-muted/50 rounded-xl p-3">
         <div className="text-muted-foreground flex items-center gap-2 text-sm">
           <LightningBoltIcon className="h-4 w-4" />
-          <span>访问 claude.ai 可导出聊天记录</span>
+          <span>访问 claude.ai 或 aistudio.google.com 可导出聊天记录</span>
         </div>
       </div>
     );
@@ -403,18 +595,20 @@ messages: ${data.chat_messages?.length || 0}
       <div className="border-border bg-card rounded-xl border p-4">
         <div className="flex items-center gap-3">
           <div className="border-primary h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
-          <span className="text-foreground text-sm">检测 Claude 页面...</span>
+          <span className="text-foreground text-sm">检测 AI 页面...</span>
         </div>
       </div>
     );
   }
+
+  const platformName = platform ? PLATFORM_NAMES[platform.platform] : 'AI';
 
   return (
     <div className="border-border bg-card rounded-xl border p-4">
       {/* 标题 */}
       <div className="mb-3 flex items-center gap-2">
         <RocketIcon className="text-primary h-5 w-5" />
-        <h3 className="text-foreground font-medium">Claude 对话</h3>
+        <h3 className="text-foreground font-medium">{platformName} 对话</h3>
       </div>
 
       {/* 就绪状态 */}
@@ -423,7 +617,7 @@ messages: ${data.chat_messages?.length || 0}
           <div className="bg-muted mb-3 rounded-lg p-2">
             <div className="text-foreground flex items-center gap-2 text-sm">
               <CheckIcon className="h-4 w-4 text-green-600" />
-              <span className="truncate">{chatTitle || '已检测到对话'}</span>
+              <span className="truncate">{platform?.title || '已检测到对话'}</span>
             </div>
           </div>
 
@@ -525,10 +719,16 @@ messages: ${data.chat_messages?.length || 0}
             <span>{error}</span>
           </div>
 
-          {!orgId && (
+          {platform?.platform === 'claude' && !orgId && (
             <div className="bg-muted rounded-lg p-3 text-xs">
               <p className="text-foreground mb-1 font-medium">提示：</p>
               <p className="text-muted-foreground">请确保已登录 Claude，并刷新页面后重试。</p>
+            </div>
+          )}
+          {platform?.platform === 'google-ai-studio' && (
+            <div className="bg-muted rounded-lg p-3 text-xs">
+              <p className="text-foreground mb-1 font-medium">提示：</p>
+              <p className="text-muted-foreground">请确保已登录 Google AI Studio，并刷新页面后重试。</p>
             </div>
           )}
 

@@ -621,6 +621,77 @@ chrome.runtime?.onMessage?.addListener(
         });
 
       return true; // 保持消息通道开放
+    } else if (msg.action === 'fetchGoogleAIStudioChat') {
+      // 从 Google AI Studio API 获取聊天数据
+      const { promptId } = msg as { promptId?: string };
+
+      if (!promptId) {
+        sendResponse({ success: false, error: '缺少 promptId' });
+        return false;
+      }
+
+      // 生成 SAPISIDHASH 认证头
+      // 算法: SAPISIDHASH timestamp_sha1(timestamp + " " + SAPISID + " " + origin)
+      const generateSapisidHash = async (sapisid: string, origin: string): Promise<string> => {
+        const timestamp = Math.floor(Date.now() / 1000);
+        const input = `${timestamp} ${sapisid} ${origin}`;
+        const encoder = new TextEncoder();
+        const data = encoder.encode(input);
+        const hashBuffer = await crypto.subtle.digest('SHA-1', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        return `${timestamp}_${hashHex}`;
+      };
+
+      // 从 cookie 中获取 SAPISID
+      const getCookie = (name: string): string | null => {
+        const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+        return match ? match[2] : null;
+      };
+
+      const sapisid = getCookie('SAPISID') || getCookie('__Secure-3PAPISID');
+      if (!sapisid) {
+        sendResponse({ success: false, error: '未找到认证信息，请确保已登录 Google' });
+        return false;
+      }
+
+      const origin = 'https://aistudio.google.com';
+
+      generateSapisidHash(sapisid, origin)
+        .then(hash => {
+          const authHeader = `SAPISIDHASH ${hash}`;
+
+          return fetch(
+            'https://alkalimakersuite-pa.clients6.google.com/$rpc/google.internal.alkali.applications.makersuite.v1.MakerSuiteService/ResolveDriveResource',
+            {
+              method: 'POST',
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json+protobuf',
+                Authorization: authHeader,
+                'x-goog-api-key': 'AIzaSyDdP816MREB3SkjZO04QXbjsigfcI0GWOs',
+                'x-user-agent': 'grpc-web-javascript/0.1',
+                Origin: origin,
+              },
+              body: JSON.stringify([promptId]),
+            },
+          );
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          sendResponse({ success: true, data });
+        })
+        .catch(error => {
+          console.error('获取 Google AI Studio 聊天数据失败:', error);
+          sendResponse({ success: false, error: error instanceof Error ? error.message : '获取失败' });
+        });
+
+      return true; // 保持消息通道开放
     }
 
     return false;
