@@ -36,10 +36,24 @@ interface ChatData {
   exportedAt: string;
 }
 
-// 平台配置
+// Lovstudio 暖学术风格配色
+const LOVSTUDIO_COLORS = {
+  primary: '#CC785C', // 陶土色
+  primaryHover: '#B86A50', // 陶土色深
+  background: '#F9F9F7', // 暖米色
+  foreground: '#181818', // 炭灰色
+  muted: '#87867F', // 灰褐色
+  border: '#D5D3CB', // 边框色
+  secondary: '#F0EEE6', // 象牙米色
+  secondaryHover: '#E8E6DC', // 象牙米色深
+  success: '#629A90', // 仙人掌绿
+  error: '#DC2626', // 红色
+} as const;
+
+// 平台配置 - 统一使用 Lovstudio 主色调
 const PLATFORM_CONFIG: Record<AIPlatform, { name: string; color: string }> = {
-  claude: { name: 'Claude', color: '#D97706' },
-  'google-ai-studio': { name: 'Google AI Studio', color: '#4285F4' },
+  claude: { name: 'Claude', color: LOVSTUDIO_COLORS.primary },
+  'google-ai-studio': { name: 'Google AI Studio', color: LOVSTUDIO_COLORS.primary },
 };
 
 export class AIExportBadge {
@@ -174,7 +188,8 @@ export class AIExportBadge {
       }
       #lovsider-ai-export-badge button:hover {
         transform: translateX(-4px);
-        box-shadow: -4px 0 12px rgba(0, 0, 0, 0.2);
+        background: ${LOVSTUDIO_COLORS.primaryHover};
+        box-shadow: -4px 0 16px rgba(204, 120, 92, 0.35);
       }
 
       .lovsider-dialog-overlay {
@@ -196,16 +211,17 @@ export class AIExportBadge {
         left: 50%;
         top: 50%;
         transform: translate(-50%, -50%) scale(0.95);
-        background: #FFFFFF;
-        border-radius: 12px;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        background: ${LOVSTUDIO_COLORS.background};
+        border-radius: 16px;
+        border: 1px solid ${LOVSTUDIO_COLORS.border};
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
         width: 400px;
         max-width: 90vw;
         z-index: 2147483647;
         opacity: 0;
         pointer-events: none;
         transition: all 0.2s ease;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       }
       .lovsider-dialog.open {
         opacity: 1;
@@ -215,20 +231,21 @@ export class AIExportBadge {
 
       .lovsider-dialog-header {
         padding: 20px 24px 16px;
-        border-bottom: 1px solid #E5E7EB;
+        border-bottom: 1px solid ${LOVSTUDIO_COLORS.border};
       }
       .lovsider-dialog-title {
         font-size: 18px;
         font-weight: 600;
-        color: #111827;
+        color: ${LOVSTUDIO_COLORS.foreground};
         margin: 0 0 4px;
         display: flex;
         align-items: center;
         gap: 8px;
+        font-family: Georgia, Cambria, 'Times New Roman', serif;
       }
       .lovsider-dialog-desc {
         font-size: 14px;
-        color: #6B7280;
+        color: ${LOVSTUDIO_COLORS.muted};
         margin: 0;
       }
 
@@ -247,32 +264,32 @@ export class AIExportBadge {
         gap: 12px;
         cursor: pointer;
         font-size: 14px;
-        color: #374151;
+        color: ${LOVSTUDIO_COLORS.foreground};
       }
       .lovsider-checkbox-label input {
         width: 16px;
         height: 16px;
-        accent-color: #D97706;
+        accent-color: ${LOVSTUDIO_COLORS.primary};
         cursor: pointer;
       }
 
       .lovsider-dialog-status {
         margin-top: 16px;
         padding: 10px 14px;
-        border-radius: 8px;
+        border-radius: 12px;
         font-size: 13px;
       }
       .lovsider-dialog-status.info {
-        background: #F3F4F6;
-        color: #6B7280;
+        background: ${LOVSTUDIO_COLORS.secondary};
+        color: ${LOVSTUDIO_COLORS.muted};
       }
       .lovsider-dialog-status.error {
         background: #FEE2E2;
-        color: #DC2626;
+        color: ${LOVSTUDIO_COLORS.error};
       }
       .lovsider-dialog-status.success {
-        background: #D1FAE5;
-        color: #059669;
+        background: rgba(98, 154, 144, 0.1);
+        color: ${LOVSTUDIO_COLORS.success};
       }
 
       .lovsider-dialog-footer {
@@ -284,7 +301,7 @@ export class AIExportBadge {
 
       .lovsider-btn {
         padding: 10px 18px;
-        border-radius: 8px;
+        border-radius: 12px;
         font-size: 14px;
         font-weight: 500;
         cursor: pointer;
@@ -300,19 +317,19 @@ export class AIExportBadge {
         cursor: not-allowed;
       }
       .lovsider-btn-secondary {
-        background: #FFFFFF;
-        color: #374151;
-        border: 1px solid #D1D5DB;
+        background: ${LOVSTUDIO_COLORS.secondary};
+        color: ${LOVSTUDIO_COLORS.foreground};
+        border: 1px solid ${LOVSTUDIO_COLORS.border};
       }
       .lovsider-btn-secondary:hover:not(:disabled) {
-        background: #F9FAFB;
+        background: ${LOVSTUDIO_COLORS.secondaryHover};
       }
       .lovsider-btn-primary {
-        background: #D97706;
+        background: ${LOVSTUDIO_COLORS.primary};
         color: #FFFFFF;
       }
       .lovsider-btn-primary:hover:not(:disabled) {
-        background: #B45309;
+        background: ${LOVSTUDIO_COLORS.primaryHover};
       }
 
       .lovsider-close-btn {
@@ -324,16 +341,16 @@ export class AIExportBadge {
         border: none;
         background: transparent;
         cursor: pointer;
-        border-radius: 6px;
+        border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #9CA3AF;
+        color: ${LOVSTUDIO_COLORS.muted};
         transition: all 0.15s ease;
       }
       .lovsider-close-btn:hover {
-        background: #F3F4F6;
-        color: #374151;
+        background: ${LOVSTUDIO_COLORS.secondary};
+        color: ${LOVSTUDIO_COLORS.foreground};
       }
     `;
     document.head.appendChild(style);
@@ -354,10 +371,10 @@ export class AIExportBadge {
 
     this.button = document.createElement('button');
     this.button.style.cssText = `
-      width: 40px;
-      height: 40px;
-      border-radius: 20px 0 0 20px;
-      background: ${config.color};
+      width: 44px;
+      height: 44px;
+      border-radius: 12px 0 0 12px;
+      background: ${LOVSTUDIO_COLORS.primary};
       color: white;
       border: none;
       padding: 0;
@@ -365,7 +382,7 @@ export class AIExportBadge {
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
+      box-shadow: -2px 0 12px rgba(204, 120, 92, 0.25);
       transition: all 0.2s ease;
       outline: none;
     `;
