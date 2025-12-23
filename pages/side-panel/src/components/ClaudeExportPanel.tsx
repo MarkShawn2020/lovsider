@@ -508,47 +508,87 @@ messages: ${data.messages.length}
 
     // 监听下载完成，复制路径到剪贴板
     return new Promise<void>((resolve, reject) => {
+      let handled = false;
+
+      const handleComplete = async () => {
+        if (handled) return;
+        handled = true;
+        chrome.downloads.onChanged.removeListener(onChanged);
+
+        chrome.downloads.search({ id: downloadId }, async results => {
+          if (results.length > 0 && results[0].filename) {
+            const path = results[0].filename;
+            const formattedPath = path.includes(' ') ? `'${path}'` : path;
+            navigator.clipboard.writeText(formattedPath).catch(console.error);
+
+            // 更新最后使用的路径
+            const pathParts = path.split(/[/\\]/);
+            pathParts.pop();
+            const separator = path.includes('\\') ? '\\' : '/';
+            let directoryPath = pathParts.join(separator);
+            if (!directoryPath && path.startsWith('/')) {
+              directoryPath = '/';
+            } else if (/^[A-Za-z]:$/.test(directoryPath)) {
+              directoryPath = `${directoryPath}${separator}`;
+            }
+            // 计算相对于用户家目录的路径
+            // 支持: macOS (/Users/xxx), Linux (/home/xxx), Windows (C:\Users\xxx)
+            const homeDirMatch = directoryPath.match(/^(\/Users\/[^/]+|\/home\/[^/]+|[A-Z]:\\Users\\[^\\]+)/i);
+            const homeDir = homeDirMatch ? homeDirMatch[0] : '';
+
+            // 计算相对于家目录的路径，这样无论浏览器默认下载位置是 ~ 还是 ~/Downloads 都能工作
+            let relativePath = '';
+            if (homeDir && directoryPath.startsWith(homeDir)) {
+              const pathFromHome = directoryPath.slice(homeDir.length + 1);
+              // 如果路径包含 Downloads，从 Downloads 开始（兼容大多数场景）
+              const downloadsIndex = pathParts.findIndex(part => part.toLowerCase() === 'downloads');
+              if (downloadsIndex !== -1 && downloadsIndex < pathParts.length) {
+                // 包含 Downloads 及其后的所有子目录
+                relativePath = pathParts.slice(downloadsIndex).join('/');
+              } else {
+                // 不包含 Downloads，使用完整的相对路径（如 Documents/work）
+                relativePath = pathFromHome;
+              }
+            }
+            await downloadSettingsStorage.updateSettings({
+              lastUsedPath: relativePath,
+              lastUsedAbsolutePath: directoryPath,
+            });
+          }
+          resolve();
+        });
+      };
+
+      const handleInterrupted = () => {
+        if (handled) return;
+        handled = true;
+        chrome.downloads.onChanged.removeListener(onChanged);
+        reject(new Error('下载被中断'));
+      };
+
       const onChanged = (delta: chrome.downloads.DownloadDelta) => {
         if (delta.id === downloadId) {
           if (delta.state?.current === 'complete') {
-            chrome.downloads.search({ id: downloadId }, async results => {
-              if (results.length > 0 && results[0].filename) {
-                const path = results[0].filename;
-                const formattedPath = path.includes(' ') ? `'${path}'` : path;
-                navigator.clipboard.writeText(formattedPath).catch(console.error);
-
-                // 更新最后使用的路径
-                const pathParts = path.split(/[/\\]/);
-                pathParts.pop();
-                const separator = path.includes('\\') ? '\\' : '/';
-                let directoryPath = pathParts.join(separator);
-                if (!directoryPath && path.startsWith('/')) {
-                  directoryPath = '/';
-                } else if (/^[A-Za-z]:$/.test(directoryPath)) {
-                  directoryPath = `${directoryPath}${separator}`;
-                }
-                const downloadsIndex = pathParts.findIndex(
-                  part => part.toLowerCase() === 'downloads' || part === '下载',
-                );
-                const relativePath =
-                  downloadsIndex !== -1 && downloadsIndex < pathParts.length - 1
-                    ? pathParts.slice(downloadsIndex + 1).join('/')
-                    : '';
-                await downloadSettingsStorage.updateSettings({
-                  lastUsedPath: relativePath,
-                  lastUsedAbsolutePath: directoryPath,
-                });
-              }
-              chrome.downloads.onChanged.removeListener(onChanged);
-              resolve();
-            });
+            handleComplete();
           } else if (delta.state?.current === 'interrupted') {
-            chrome.downloads.onChanged.removeListener(onChanged);
-            reject(new Error('下载被中断'));
+            handleInterrupted();
           }
         }
       };
+
       chrome.downloads.onChanged.addListener(onChanged);
+
+      // 立即检查下载状态，处理 data URL 瞬间完成的情况（竞态条件修复）
+      chrome.downloads.search({ id: downloadId }, results => {
+        if (results.length > 0) {
+          const state = results[0].state;
+          if (state === 'complete') {
+            handleComplete();
+          } else if (state === 'interrupted') {
+            handleInterrupted();
+          }
+        }
+      });
     });
   };
 

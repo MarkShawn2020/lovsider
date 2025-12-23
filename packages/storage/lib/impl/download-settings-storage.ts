@@ -23,7 +23,7 @@ const defaultSettings: DownloadSettings = {
 };
 
 const normalizeRelativePath = (path?: string) => {
-  if (!path || path === '__CHROME_DEFAULT__' || path === 'Downloads') {
+  if (!path || path === '__CHROME_DEFAULT__') {
     return '';
   }
 

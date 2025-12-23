@@ -490,6 +490,10 @@ datetime: ${datetime}
 
       // 获取下载设置
       const settings = await downloadSettingsStorage.getSettings();
+      console.log('[Download] Settings loaded:', {
+        lastUsedPath: settings.lastUsedPath,
+        lastUsedAbsolutePath: settings.lastUsedAbsolutePath,
+      });
 
       // 统一使用 Chrome downloads API
       await downloadWithChromeAPI(filename, settings);
@@ -516,56 +520,108 @@ datetime: ${datetime}
     if (settings.lastUsedPath) {
       downloadOptions.filename = `${settings.lastUsedPath}/${filename}`;
     }
+    console.log('[Download] Download options:', { filename: downloadOptions.filename, saveAs: downloadOptions.saveAs });
 
     // 使用 Chrome downloads API
     const downloadId = await chrome.downloads.download(downloadOptions);
+    console.log('[Download] Download started, id:', downloadId);
+
+    let handled = false;
+
+    const handleComplete = async () => {
+      if (handled) return;
+      handled = true;
+      chrome.downloads.onChanged.removeListener(onDownloadChanged);
+      console.log('[Download] handleComplete called');
+
+      chrome.downloads.search({ id: downloadId }, async results => {
+        console.log(
+          '[Download] Search results:',
+          results.length > 0 ? { state: results[0].state, filename: results[0].filename } : 'no results',
+        );
+        if (results.length > 0) {
+          const downloadedFile = results[0];
+          if (downloadedFile.filename) {
+            // 提取目录路径并计算 Downloads 下的相对路径
+            const absolutePath = downloadedFile.filename;
+            console.log('[Download] Absolute path:', absolutePath);
+
+            // 复制文件路径到剪贴板，有空格时用单引号包裹
+            const formattedPath = absolutePath.includes(' ') ? `'${absolutePath}'` : absolutePath;
+            navigator.clipboard.writeText(formattedPath).catch(console.error);
+
+            const pathParts = absolutePath.split(/[/\\]/);
+            pathParts.pop(); // 移除文件名
+            const separator = absolutePath.includes('\\') ? '\\' : '/';
+            let directoryPath = pathParts.join(separator);
+            if (!directoryPath && absolutePath.startsWith('/')) {
+              directoryPath = '/';
+            } else if (/^[A-Za-z]:$/.test(directoryPath)) {
+              directoryPath = `${directoryPath}${separator}`;
+            }
+
+            // 计算相对于用户家目录的路径
+            // 支持: macOS (/Users/xxx), Linux (/home/xxx), Windows (C:\Users\xxx)
+            const homeDirMatch = directoryPath.match(/^(\/Users\/[^/]+|\/home\/[^/]+|[A-Z]:\\Users\\[^\\]+)/i);
+            const homeDir = homeDirMatch ? homeDirMatch[0] : '';
+            console.log('[Download] Path analysis:', { pathParts, homeDir, directoryPath });
+
+            // 计算相对于家目录的路径，这样无论浏览器默认下载位置是 ~ 还是 ~/Downloads 都能工作
+            let relativePath = '';
+            if (homeDir && directoryPath.startsWith(homeDir)) {
+              const pathFromHome = directoryPath.slice(homeDir.length + 1);
+              // 如果路径包含 Downloads，从 Downloads 开始（兼容大多数场景）
+              const downloadsIndex = pathParts.findIndex(part => part.toLowerCase() === 'downloads');
+              if (downloadsIndex !== -1 && downloadsIndex < pathParts.length) {
+                // 包含 Downloads 及其后的所有子目录
+                relativePath = pathParts.slice(downloadsIndex).join('/');
+              } else {
+                // 不包含 Downloads，使用完整的相对路径（如 Documents/work）
+                relativePath = pathFromHome;
+              }
+            }
+            console.log('[Download] Saving settings:', {
+              lastUsedPath: relativePath,
+              lastUsedAbsolutePath: directoryPath,
+            });
+
+            await downloadSettingsStorage.updateSettings({
+              lastUsedPath: relativePath,
+              lastUsedAbsolutePath: directoryPath,
+            });
+            // 验证设置是否真正保存
+            const verifySettings = await downloadSettingsStorage.getSettings();
+            console.log('[Download] Settings saved, verification:', {
+              lastUsedPath: verifySettings.lastUsedPath,
+              lastUsedAbsolutePath: verifySettings.lastUsedAbsolutePath,
+            });
+          }
+        }
+      });
+    };
 
     // 监听下载完成事件以更新最后使用的路径
     const onDownloadChanged = (delta: chrome.downloads.DownloadDelta) => {
+      console.log('[Download] onChanged event:', {
+        id: delta.id,
+        state: delta.state,
+        matchesId: delta.id === downloadId,
+      });
       if (delta.id === downloadId && delta.state?.current === 'complete') {
-        chrome.downloads.search({ id: downloadId }, async results => {
-          if (results.length > 0) {
-            const downloadedFile = results[0];
-            if (downloadedFile.filename) {
-              // 提取目录路径并计算 Downloads 下的相对路径
-              const absolutePath = downloadedFile.filename;
-
-              // 复制文件路径到剪贴板，有空格时用单引号包裹
-              const formattedPath = absolutePath.includes(' ') ? `'${absolutePath}'` : absolutePath;
-              navigator.clipboard.writeText(formattedPath).catch(console.error);
-
-              const pathParts = absolutePath.split(/[/\\]/);
-              pathParts.pop(); // 移除文件名
-              const separator = absolutePath.includes('\\') ? '\\' : '/';
-              let directoryPath = pathParts.join(separator);
-              if (!directoryPath && absolutePath.startsWith('/')) {
-                directoryPath = '/';
-              } else if (/^[A-Za-z]:$/.test(directoryPath)) {
-                directoryPath = `${directoryPath}${separator}`;
-              }
-
-              // 查找 Downloads 文件夹在路径中的位置
-              const downloadsIndex = pathParts.findIndex(part => part.toLowerCase() === 'downloads' || part === '下载');
-
-              const relativePath =
-                downloadsIndex !== -1 && downloadsIndex < pathParts.length - 1
-                  ? pathParts.slice(downloadsIndex + 1).join('/')
-                  : '';
-
-              await downloadSettingsStorage.updateSettings({
-                lastUsedPath: relativePath,
-                lastUsedAbsolutePath: directoryPath,
-              });
-            }
-          }
-        });
-
-        // 移除监听器
-        chrome.downloads.onChanged.removeListener(onDownloadChanged);
+        handleComplete();
       }
     };
 
     chrome.downloads.onChanged.addListener(onDownloadChanged);
+    console.log('[Download] Listener added');
+
+    // 立即检查下载状态，处理 data URL 瞬间完成的情况（竞态条件修复）
+    chrome.downloads.search({ id: downloadId }, results => {
+      console.log('[Download] Immediate check:', results.length > 0 ? { state: results[0].state } : 'no results');
+      if (results.length > 0 && results[0].state === 'complete') {
+        handleComplete();
+      }
+    });
   };
 
   const fallbackDownload = () => {
