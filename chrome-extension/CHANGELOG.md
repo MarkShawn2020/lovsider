@@ -1,5 +1,23 @@
 # chrome-extension
 
+## 1.2.0
+
+### Minor Changes
+
+- feat(export): 支持 Google AI Studio 对话导出
+
+  - 重构 ClaudeExportPanel 为通用多平台导出组件
+  - 新增 Google AI Studio 页面检测和 API 调用
+  - 实现 SAPISIDHASH 认证生成
+  - 解析 Google AI Studio JSON 响应格式
+  - 异步获取并更新真实对话标题
+
+### Patch Changes
+
+- @extension/env@1.2.0
+- @extension/shared@1.2.0
+- @extension/storage@1.2.0
+
 ## 1.1.6
 
 ### Patch Changes

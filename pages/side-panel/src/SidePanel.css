@@ -1,4 +1,4 @@
-/* Lovpen Sider侧边栏样式 */
+/* Lovsider 侧边栏样式 */
 /* 主要使用Tailwind CSS，这里只放一些全局样式 */
 
 * {
@@ -47,7 +47,7 @@ html, body {
   background: rgba(75, 85, 99, 0.7);
 }
 
-/* Lovpen Logo Theme Colors - Override any existing styles */
+/* Lovsider Logo Theme Colors - Override any existing styles */
 svg path:first-child {
   fill: var(--color-primary, #D97757) !important;
 }

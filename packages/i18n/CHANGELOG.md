@@ -1,5 +1,11 @@
 # @extension/i18n
 
+## 1.2.0
+
+### Patch Changes
+
+- @extension/env@1.2.0
+
 ## 1.1.6
 
 ### Patch Changes
