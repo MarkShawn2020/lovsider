@@ -51,7 +51,7 @@ const manifest = {
   action: {
     default_popup: 'popup/index.html',
     default_icon: 'icon-34.png',
-    default_title: '打开 LovSider',
+    default_title: '打开 Lovsider',
   },
   icons: {
     '16': 'icon-34.png',
