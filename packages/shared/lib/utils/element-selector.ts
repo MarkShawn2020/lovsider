@@ -427,7 +427,7 @@ export class ElementSelector {
     this.hideStatusMessage();
 
     const statusDiv = document.createElement('div');
-    statusDiv.id = 'lovpensider-status';
+    statusDiv.id = 'lovsider-status';
     statusDiv.style.cssText = `
       position: fixed;
       top: 20px;
@@ -447,7 +447,7 @@ export class ElementSelector {
   }
 
   private hideStatusMessage(): void {
-    const statusDivs = document.querySelectorAll('#lovpensider-status');
+    const statusDivs = document.querySelectorAll('#lovsider-status');
     statusDivs.forEach(div => div.remove());
   }
 

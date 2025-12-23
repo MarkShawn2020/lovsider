@@ -83,23 +83,23 @@ export class FloatingBadgeV3 {
   private createElements(): void {
     // 主容器
     this.container = document.createElement('div');
-    this.container.id = 'lovpen-floating-badge-v3';
-    this.container.className = 'lovpen-floating-badge-container';
+    this.container.id = 'lovsider-floating-badge-v3';
+    this.container.className = 'lovsider-floating-badge-container';
     this.applyContainerStyles();
 
     // 徽章按钮
     this.badge = document.createElement('button');
-    this.badge.id = 'lovpen-floating-badge-button';
-    this.badge.className = 'lovpen-floating-badge';
-    this.badge.setAttribute('aria-label', '打开 LovPen 侧边栏');
+    this.badge.id = 'lovsider-floating-badge-button';
+    this.badge.className = 'lovsider-floating-badge';
+    this.badge.setAttribute('aria-label', '打开 Lovsider 侧边栏');
     this.applyBadgeStyles();
     this.badge.innerHTML = this.getBadgeContent();
 
     // 工具提示
     if (this.config.showTooltip) {
       this.tooltip = document.createElement('div');
-      this.tooltip.className = 'lovpen-floating-tooltip';
-      this.tooltip.textContent = '打开 LovPen 侧边栏';
+      this.tooltip.className = 'lovsider-floating-tooltip';
+      this.tooltip.textContent = '打开 Lovsider 侧边栏';
       this.applyTooltipStyles();
       this.container.appendChild(this.tooltip);
     }
@@ -470,7 +470,7 @@ export class FloatingBadgeV3 {
     }
 
     if (this.tooltip) {
-      this.tooltip.textContent = this.state.sidebarOpen ? '关闭 LovPen 侧边栏' : '打开 LovPen 侧边栏';
+      this.tooltip.textContent = this.state.sidebarOpen ? '关闭 Lovsider 侧边栏' : '打开 Lovsider 侧边栏';
     }
 
     // 发送消息
@@ -492,7 +492,7 @@ export class FloatingBadgeV3 {
     }
 
     if (this.tooltip) {
-      this.tooltip.textContent = isOpen ? '关闭 LovPen 侧边栏' : '打开 LovPen 侧边栏';
+      this.tooltip.textContent = isOpen ? '关闭 Lovsider 侧边栏' : '打开 Lovsider 侧边栏';
     }
 
     // V3 不需要重新定位，CSS 自动处理
@@ -584,7 +584,7 @@ export class FloatingBadgeV3 {
   private attachToPage(): void {
     if (!this.container) return;
 
-    const existing = document.getElementById('lovpen-floating-badge-v3');
+    const existing = document.getElementById('lovsider-floating-badge-v3');
     if (existing) {
       existing.remove();
     }

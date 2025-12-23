@@ -105,21 +105,21 @@ export class FloatingBadge {
   private createElements(): void {
     // 创建容器
     this.container = document.createElement('div');
-    this.container.id = 'lovpen-floating-badge-container';
+    this.container.id = 'lovsider-floating-badge-container';
     this.container.style.cssText = this.getContainerStyles();
 
     // 创建徽章
     this.badge = document.createElement('div');
-    this.badge.id = 'lovpen-floating-badge';
+    this.badge.id = 'lovsider-floating-badge';
     this.badge.style.cssText = this.getBadgeStyles();
     this.badge.innerHTML = this.getBadgeContent();
 
     // 创建工具提示
     if (this.config.showTooltip) {
       this.tooltip = document.createElement('div');
-      this.tooltip.id = 'lovpen-floating-tooltip';
+      this.tooltip.id = 'lovsider-floating-tooltip';
       this.tooltip.style.cssText = this.getTooltipStyles();
-      this.tooltip.textContent = '打开 LovPen 侧边栏';
+      this.tooltip.textContent = '打开 Lovsider 侧边栏';
       this.tooltip.style.display = 'none';
       this.container.appendChild(this.tooltip);
     }
@@ -200,7 +200,7 @@ export class FloatingBadge {
       return this.config.customIcon;
     }
 
-    // 默认 LovPen 图标
+    // 默认 Lovsider 图标
     return `
       <svg width="${this.getSizeValue() * 0.6}" height="${this.getSizeValue() * 0.6}" viewBox="0 0 24 24" fill="currentColor">
         <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
@@ -296,7 +296,7 @@ export class FloatingBadge {
     if (!this.container) return;
 
     // 检查是否已存在
-    const existing = document.getElementById('lovpen-floating-badge-container');
+    const existing = document.getElementById('lovsider-floating-badge-container');
     if (existing) {
       existing.remove();
     }
@@ -665,7 +665,7 @@ export class FloatingBadge {
 
     // 更新工具提示
     if (this.tooltip) {
-      this.tooltip.textContent = this.state.sidebarOpen ? '关闭 LovPen 侧边栏' : '打开 LovPen 侧边栏';
+      this.tooltip.textContent = this.state.sidebarOpen ? '关闭 Lovsider 侧边栏' : '打开 Lovsider 侧边栏';
     }
   }
 
@@ -884,7 +884,7 @@ export class FloatingBadge {
 
     // 更新工具提示
     if (this.tooltip) {
-      this.tooltip.textContent = isOpen ? '关闭 LovPen 侧边栏' : '打开 LovPen 侧边栏';
+      this.tooltip.textContent = isOpen ? '关闭 Lovsider 侧边栏' : '打开 Lovsider 侧边栏';
     }
   }
 

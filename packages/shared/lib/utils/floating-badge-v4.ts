@@ -56,16 +56,16 @@ export class FloatingBadgeV4 {
   private createElements(): void {
     // 第一层：定位容器（只负责位置）
     this.wrapper = document.createElement('div');
-    this.wrapper.className = 'lovpen-badge-wrapper';
+    this.wrapper.className = 'lovsider-badge-wrapper';
     this.wrapper.setAttribute('data-edge', this.currentEdge);
 
     // 第二层：缩放容器（只负责hover效果）
     this.inner = document.createElement('div');
-    this.inner.className = 'lovpen-badge-inner';
+    this.inner.className = 'lovsider-badge-inner';
 
     // 第三层：徽章本体（只负责视觉）
     this.badge = document.createElement('button');
-    this.badge.className = 'lovpen-badge';
+    this.badge.className = 'lovsider-badge';
     this.badge.innerHTML = this.getBadgeIcon();
 
     // 组装结构
@@ -134,7 +134,7 @@ export class FloatingBadgeV4 {
    * 注入全局CSS规则
    */
   private injectGlobalStyles(): void {
-    const styleId = 'lovpen-badge-v4-styles';
+    const styleId = 'lovsider-badge-v4-styles';
 
     // 如果已存在则移除
     const existing = document.getElementById(styleId);
@@ -146,32 +146,32 @@ export class FloatingBadgeV4 {
     style.id = styleId;
     style.textContent = `
       /* Hover效果 - 只作用于inner容器 */
-      .lovpen-badge-wrapper:hover .lovpen-badge-inner {
+      .lovsider-badge-wrapper:hover .lovsider-badge-inner {
         transform: scale(1.08) !important;
       }
       
       /* Hover时的阴影效果 - 只作用于badge */
-      .lovpen-badge-wrapper:hover .lovpen-badge {
+      .lovsider-badge-wrapper:hover .lovsider-badge {
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
       }
       
       /* 点击效果 */
-      .lovpen-badge-wrapper:active .lovpen-badge-inner {
+      .lovsider-badge-wrapper:active .lovsider-badge-inner {
         transform: scale(0.95) !important;
       }
       
       /* 拖动时的样式 */
-      .lovpen-badge-wrapper.dragging .lovpen-badge-inner {
+      .lovsider-badge-wrapper.dragging .lovsider-badge-inner {
         transform: scale(0.9) !important;
       }
       
-      .lovpen-badge-wrapper.dragging .lovpen-badge {
+      .lovsider-badge-wrapper.dragging .lovsider-badge {
         cursor: grabbing !important;
         opacity: 0.8 !important;
       }
       
       /* 工具提示样式 */
-      .lovpen-badge::after {
+      .lovsider-badge::after {
         content: attr(data-tooltip);
         position: absolute;
         white-space: nowrap;
@@ -187,37 +187,37 @@ export class FloatingBadgeV4 {
       }
       
       /* 根据边缘位置调整工具提示 */
-      .lovpen-badge-wrapper[data-edge="right"] .lovpen-badge::after {
+      .lovsider-badge-wrapper[data-edge="right"] .lovsider-badge::after {
         right: calc(100% + 10px);
         top: 50%;
         transform: translateY(-50%);
       }
       
-      .lovpen-badge-wrapper[data-edge="left"] .lovpen-badge::after {
+      .lovsider-badge-wrapper[data-edge="left"] .lovsider-badge::after {
         left: calc(100% + 10px);
         top: 50%;
         transform: translateY(-50%);
       }
       
-      .lovpen-badge-wrapper[data-edge="top"] .lovpen-badge::after {
+      .lovsider-badge-wrapper[data-edge="top"] .lovsider-badge::after {
         top: calc(100% + 10px);
         left: 50%;
         transform: translateX(-50%);
       }
       
-      .lovpen-badge-wrapper[data-edge="bottom"] .lovpen-badge::after {
+      .lovsider-badge-wrapper[data-edge="bottom"] .lovsider-badge::after {
         bottom: calc(100% + 10px);
         left: 50%;
         transform: translateX(-50%);
       }
       
       /* Hover时显示工具提示 */
-      .lovpen-badge-wrapper:hover .lovpen-badge::after {
+      .lovsider-badge-wrapper:hover .lovsider-badge::after {
         opacity: 1;
       }
       
       /* 禁用拖动时的工具提示 */
-      .lovpen-badge-wrapper.dragging .lovpen-badge::after {
+      .lovsider-badge-wrapper.dragging .lovsider-badge::after {
         opacity: 0 !important;
       }
     `;
@@ -417,7 +417,7 @@ export class FloatingBadgeV4 {
    */
   private updateTooltip(): void {
     if (this.badge) {
-      this.badge.setAttribute('data-tooltip', this.isSidebarOpen ? '关闭 LovPen 侧边栏' : '打开 LovPen 侧边栏');
+      this.badge.setAttribute('data-tooltip', this.isSidebarOpen ? '关闭 Lovsider 侧边栏' : '打开 Lovsider 侧边栏');
     }
   }
 
@@ -472,7 +472,7 @@ export class FloatingBadgeV4 {
     if (!this.wrapper) return;
 
     // 移除旧实例
-    const existing = document.querySelector('.lovpen-badge-wrapper');
+    const existing = document.querySelector('.lovsider-badge-wrapper');
     if (existing) {
       existing.remove();
     }
@@ -513,7 +513,7 @@ export class FloatingBadgeV4 {
    */
   public destroy(): void {
     // 移除样式
-    const style = document.getElementById('lovpen-badge-v4-styles');
+    const style = document.getElementById('lovsider-badge-v4-styles');
     if (style) {
       style.remove();
     }

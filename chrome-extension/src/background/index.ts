@@ -1,16 +1,16 @@
 import 'webextension-polyfill';
 import { dbManager, safeSendTabMessage } from '@extension/shared';
 
-console.log('[LovpenSider] Background script loaded');
+console.log('[Lovsider] Background script loaded');
 
 // 初始化数据库
 dbManager
   .initialize()
   .then(() => {
-    console.log('[LovpenSider] Database initialized');
+    console.log('[Lovsider] Database initialized');
   })
   .catch(error => {
-    console.error('[LovpenSider] Database initialization failed:', error);
+    console.error('[Lovsider] Database initialization failed:', error);
   });
 
 // 启用侧边面板自动打开
@@ -20,7 +20,7 @@ if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
 
 // 监听消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log('[LovpenSider] Background received message:', request);
+  console.log('[Lovsider] Background received message:', request);
 
   if (request.action === 'convertToMarkdown') {
     sendResponse({ success: true });
@@ -40,7 +40,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       chrome.sidePanel
         .open({ tabId: sender.tab.id })
         .then(() => {
-          console.log('[LovpenSider] Side panel opened successfully');
+          console.log('[Lovsider] Side panel opened successfully');
           // 通知所有内容脚本更新徽章状态
           if (sender.tab?.id) {
             safeSendTabMessage(sender.tab.id, { action: 'sidebarStateChanged', isOpen: true });
@@ -48,11 +48,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse({ success: true });
         })
         .catch(error => {
-          console.error('[LovpenSider] Failed to open side panel:', error);
+          console.error('[Lovsider] Failed to open side panel:', error);
           sendResponse({ success: false, error: error.message });
         });
     } else {
-      console.error('[LovpenSider] No tab ID available');
+      console.error('[Lovsider] No tab ID available');
       sendResponse({ success: false, error: 'No tab ID' });
     }
   } else if (request.action === 'closeSidePanel') {
@@ -65,7 +65,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // 方法1: 发送消息让侧边栏自行关闭
         chrome.runtime
           .sendMessage({ action: 'closeSidePanelRequest' })
-          .catch(err => console.log('[LovpenSider] Method 1 failed:', err)),
+          .catch(err => console.log('[Lovsider] Method 1 failed:', err)),
 
         // 方法2: 尝试通过 setOptions 禁用侧边栏（然后立即重新启用）
         chrome.sidePanel
@@ -82,7 +82,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               });
             }, 100);
           })
-          .catch(err => console.log('[LovpenSider] Method 2 failed:', err)),
+          .catch(err => console.log('[Lovsider] Method 2 failed:', err)),
 
         // 方法3: 尝试设置空路径
         chrome.sidePanel
@@ -99,10 +99,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               });
             }, 100);
           })
-          .catch(err => console.log('[LovpenSider] Method 3 failed:', err)),
+          .catch(err => console.log('[Lovsider] Method 3 failed:', err)),
       ])
         .then(() => {
-          console.log('[LovpenSider] Close panel attempts completed');
+          console.log('[Lovsider] Close panel attempts completed');
           // 通知所有内容脚本更新徽章状态
           if (sender.tab?.id) {
             safeSendTabMessage(sender.tab.id, { action: 'sidebarStateChanged', isOpen: false });
@@ -110,7 +110,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse({ success: true });
         })
         .catch(error => {
-          console.error('[LovpenSider] All close methods failed:', error);
+          console.error('[Lovsider] All close methods failed:', error);
           // 即使关闭失败，也要更新徽章状态
           if (sender.tab?.id) {
             safeSendTabMessage(sender.tab.id, { action: 'sidebarStateChanged', isOpen: false });
@@ -118,7 +118,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse({ success: false, error: 'Cannot close sidebar programmatically' });
         });
     } else {
-      console.error('[LovpenSider] No tab ID available');
+      console.error('[Lovsider] No tab ID available');
       sendResponse({ success: false, error: 'No tab ID' });
     }
   } else if (request.action === 'saveFloatingBadgeState') {
@@ -180,7 +180,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url) {
     // 可以在这里注入内容脚本或进行其他初始化操作
-    console.log('[LovpenSider] Tab updated:', tab.url);
+    console.log('[Lovsider] Tab updated:', tab.url);
   }
 });
 
@@ -208,8 +208,8 @@ chrome.windows.onFocusChanged.addListener(async windowId => {
         });
     }
   } catch (error) {
-    console.error('[LovpenSider] Error checking sidebar state:', error);
+    console.error('[Lovsider] Error checking sidebar state:', error);
   }
 });
 
-console.log('[LovpenSider] Background script initialized');
+console.log('[Lovsider] Background script initialized');

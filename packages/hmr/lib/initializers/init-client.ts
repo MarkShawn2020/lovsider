@@ -5,7 +5,7 @@ export default async ({ id, onUpdate }: { id: string; onUpdate: () => void }) =>
   const ws = new WebSocket(LOCAL_RELOAD_SOCKET_URL);
 
   ws.onopen = () => {
-    console.info('[LovSider] HMR connected');
+    console.info('[Lovsider] HMR connected');
     ws.addEventListener('message', event => {
       const message = MessageInterpreter.receive(String(event.data));
 
@@ -18,7 +18,7 @@ export default async ({ id, onUpdate }: { id: string; onUpdate: () => void }) =>
 
   ws.onerror = () => {
     console.warn(
-      '%c[LovSider]%c 当前加载的是开发构建版本，但 HMR 服务器未运行。\n' +
+      '%c[Lovsider]%c 当前加载的是开发构建版本，但 HMR 服务器未运行。\n' +
         '• 如需热更新：运行 %cpnpm dev%c\n' +
         '• 如需生产版本：运行 %cpnpm build%c（不会有此提示）',
       'color: #f59e0b; font-weight: bold',

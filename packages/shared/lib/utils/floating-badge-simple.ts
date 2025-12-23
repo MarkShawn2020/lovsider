@@ -74,7 +74,7 @@ export class FloatingBadgeSimple {
       -webkit-tap-highlight-color: transparent;
     `;
 
-    // 设置内容 - LovPen Logo
+    // 设置内容 - Lovsider Logo
     this.button.innerHTML = `
       <svg width="18" height="20" viewBox="0 0 986 1080" fill="currentColor" style="pointer-events: none;">
         <g>

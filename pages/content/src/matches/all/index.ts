@@ -9,7 +9,7 @@ import {
 } from '@extension/shared';
 import type { FormFillRequest, SitePreset, FloatingBadgeConfig } from '@extension/shared';
 
-console.debug('[LovpenSider] Content script loaded');
+console.debug('[Lovsider] Content script loaded');
 
 // 内置预设（保持与SitePresetsPanel.tsx中的一致）
 const BUILT_IN_PRESETS: SitePreset[] = [
@@ -55,7 +55,7 @@ const BUILT_IN_PRESETS: SitePreset[] = [
   },
 ];
 
-class LovpenSiderElementSelector extends ElementSelector {
+class LovsiderElementSelector extends ElementSelector {
   protected onElementSelected(): void {
     const data = this.getSelectedElementData();
     if (data) {
@@ -98,7 +98,7 @@ class LovpenSiderElementSelector extends ElementSelector {
 }
 
 // 创建选择器实例（初始化时先使用默认预设）
-let selector = new LovpenSiderElementSelector({
+let selector = new LovsiderElementSelector({
   enableNavigation: true,
   showStatusMessages: true,
   sitePresets: BUILT_IN_PRESETS,
@@ -153,16 +153,16 @@ async function loadUserPresets() {
       const allPresets = [...enabledBuiltInPresets, ...enabledCustomPresets];
 
       // 重新创建选择器实例
-      selector = new LovpenSiderElementSelector({
+      selector = new LovsiderElementSelector({
         enableNavigation: true,
         showStatusMessages: true,
         sitePresets: allPresets,
       });
 
-      console.log('[LovpenSider] 预设配置已加载，共', allPresets.length, '个预设');
+      console.log('[Lovsider] 预设配置已加载，共', allPresets.length, '个预设');
     }
   } catch (error) {
-    console.error('[LovpenSider] 加载预设配置失败:', error);
+    console.error('[Lovsider] 加载预设配置失败:', error);
   }
 }
 
@@ -172,7 +172,7 @@ loadUserPresets();
 // 监听存储变化，实时更新预设
 chrome.storage?.onChanged?.addListener((changes, areaName) => {
   if (areaName === 'local' && changes['site-presets-storage-key']) {
-    console.log('[LovpenSider] 检测到预设配置变化，重新加载');
+    console.log('[Lovsider] 检测到预设配置变化，重新加载');
     loadUserPresets();
   }
 });
@@ -234,7 +234,7 @@ chrome.runtime?.onMessage?.addListener(
             sendResponse({ success: true });
           })
           .catch(error => {
-            console.error('[LovpenSider] Failed to copy to clipboard:', error);
+            console.error('[Lovsider] Failed to copy to clipboard:', error);
             sendResponse({ success: false, error: error.message });
           });
         return true; // 保持消息通道开放
@@ -699,7 +699,7 @@ chrome.runtime?.onMessage?.addListener(
 );
 
 // 导出选择器实例供调试使用
-(window as unknown as { lovpenSiderSelector: typeof selector }).lovpenSiderSelector = selector;
+(window as unknown as { lovsiderSelector: typeof selector }).lovsiderSelector = selector;
 
 // 初始化悬浮徽章 - 极简版本
 let floatingBadge: FloatingBadgeSimple | null = null;
@@ -727,19 +727,19 @@ async function initializeFloatingBadge() {
     const { enabled, config, states, blacklist, whitelist, useWhitelist } = storageData;
 
     if (!enabled) {
-      console.log('[LovpenSider] 悬浮徽章已禁用');
+      console.log('[Lovsider] 悬浮徽章已禁用');
       return;
     }
 
     // 检查黑名单
     if (blacklist && blacklist.includes(hostname)) {
-      console.log('[LovpenSider] 当前网站在黑名单中，不显示悬浮徽章');
+      console.log('[Lovsider] 当前网站在黑名单中，不显示悬浮徽章');
       return;
     }
 
     // 检查白名单模式
     if (useWhitelist && whitelist && !whitelist.includes(hostname)) {
-      console.log('[LovpenSider] 当前网站不在白名单中，不显示悬浮徽章');
+      console.log('[Lovsider] 当前网站不在白名单中，不显示悬浮徽章');
       return;
     }
 
@@ -747,16 +747,16 @@ async function initializeFloatingBadge() {
     floatingBadge = new FloatingBadgeSimple();
     floatingBadge.init();
 
-    console.log('[LovpenSider] 悬浮徽章已初始化');
+    console.log('[Lovsider] 悬浮徽章已初始化');
   } catch (error) {
-    console.error('[LovpenSider] 初始化悬浮徽章失败:', error);
+    console.error('[Lovsider] 初始化悬浮徽章失败:', error);
   }
 }
 
 // 监听存储变化，实时更新悬浮徽章
 chrome.storage?.onChanged?.addListener((changes, areaName) => {
   if (areaName === 'local' && changes['floating-badge-storage-key']) {
-    console.log('[LovpenSider] 检测到悬浮徽章配置变化');
+    console.log('[Lovsider] 检测到悬浮徽章配置变化');
 
     // 销毁现有徽章
     if (floatingBadge) {

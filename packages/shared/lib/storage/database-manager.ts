@@ -46,7 +46,7 @@ export interface DatabaseManager {
 
 export class IndexedDBManager implements DatabaseManager {
   private db: IDBDatabase | null = null;
-  private readonly dbName = 'LovpenSiderDB';
+  private readonly dbName = 'LovsiderDB';
   private readonly dbVersion = 1;
 
   async initialize(): Promise<void> {
