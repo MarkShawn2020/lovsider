@@ -1,5 +1,14 @@
 # @extension/ui
 
+## 1.2.1
+
+### Patch Changes
+
+- Updated dependencies [e5da87f]
+  - @extension/storage@1.2.1
+  - @extension/shared@1.2.1
+  - @extension/i18n@1.2.1
+
 ## 1.2.0
 
 ### Patch Changes

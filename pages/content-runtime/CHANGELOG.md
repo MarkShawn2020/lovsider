@@ -1,5 +1,12 @@
 # @extension/content-runtime-script
 
+## 1.2.1
+
+### Patch Changes
+
+- @extension/ui@1.2.1
+- @extension/env@1.2.1
+
 ## 1.2.0
 
 ### Patch Changes

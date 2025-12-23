@@ -1,5 +1,11 @@
 # @extension/vite-config
 
+## 1.2.1
+
+### Patch Changes
+
+- @extension/env@1.2.1
+
 ## 1.2.0
 
 ### Patch Changes

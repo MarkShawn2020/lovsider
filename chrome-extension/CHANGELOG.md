@@ -1,5 +1,15 @@
 # chrome-extension
 
+## 1.2.1
+
+### Patch Changes
+
+- e5da87f: fix: 修复下载路径记忆功能在非标准浏览器配置下不工作的问题
+- Updated dependencies [e5da87f]
+  - @extension/storage@1.2.1
+  - @extension/shared@1.2.1
+  - @extension/env@1.2.1
+
 ## 1.2.0
 
 ### Minor Changes
