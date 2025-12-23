@@ -1,88 +1,110 @@
-# LovSider
+<p align="center">
+  <img src="docs/images/cover.png" alt="LovSider Cover" width="100%">
+</p>
 
-多功能浏览器侧边栏工具集，支持网页内容捕获、表单自动填充、开发者工具等功能。
+<h1 align="center">
+  <img src="assets/logo.svg" width="32" height="32" alt="Logo" align="top">
+  LovSider
+</h1>
 
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript)
-![Chrome Extension](https://img.shields.io/badge/Chrome-MV3-4285F4?logo=googlechrome)
+<p align="center">
+  <strong>Multi-functional browser sidebar toolkit for web capture and productivity</strong><br>
+  <sub>Chrome Extension · Firefox Add-on</sub>
+</p>
 
-## 功能特性
+<p align="center">
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react" alt="React">
+  <img src="https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Chrome-MV3-4285F4?logo=googlechrome" alt="Chrome Extension">
+  <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
+</p>
 
-### 🎯 页面捕获
-- **智能选择** - 自动识别页面主要内容区域
-- **手动选择** - 点击选取任意 DOM 元素
-- **Markdown 导出** - 一键转换并下载
+---
 
-### 📝 表单自动填充
-- 检测页面表单字段
-- 支持模板化填充
-- 模拟真实输入行为
+## Features
 
-### 🛠️ 开发者工具
-- 元素标记（输入框、容器等）
-- 表单调试
-- 命令行交互界面
+### Page Capture
+- **Smart Selection** - Auto-detect main content areas
+- **Manual Selection** - Click to select any DOM element
+- **Markdown Export** - One-click convert and download
 
-### ⚙️ 悬浮徽章
-- 可拖拽定位
-- 右键菜单快捷操作
-- 支持按站点/全局隐藏
+### Form Auto-fill
+- Detect form fields on pages
+- Template-based filling
+- Simulate real typing behavior
 
-## 安装
+### Developer Tools
+- Element marking (inputs, containers)
+- Form debugging
+- Command-line interface
+
+### Floating Badge
+- Draggable positioning
+- Right-click menu for quick actions
+- Hide per-site or globally
+
+## Installation
 
 ```bash
-# 克隆项目
+# Clone repository
 git clone https://github.com/MarkShawn2020/lovsider.git
 cd lovsider
 
-# 安装依赖
+# Install dependencies
 pnpm install
 
-# 开发模式
+# Development mode
 pnpm dev
 
-# 构建
+# Build
 pnpm build
 ```
 
-### 加载扩展
+### Load Extension
 
 **Chrome:**
-1. 打开 `chrome://extensions`
-2. 开启「开发者模式」
-3. 点击「加载已解压的扩展程序」
-4. 选择 `dist` 目录
+1. Open `chrome://extensions`
+2. Enable "Developer mode"
+3. Click "Load unpacked"
+4. Select `dist` directory
 
 **Firefox:**
-1. 运行 `pnpm dev:firefox`
-2. 打开 `about:debugging#/runtime/this-firefox`
-3. 点击「临时载入附加组件」
-4. 选择 `dist/manifest.json`
+1. Run `pnpm dev:firefox`
+2. Open `about:debugging#/runtime/this-firefox`
+3. Click "Load Temporary Add-on"
+4. Select `dist/manifest.json`
 
-## 项目结构
+## Project Structure
 
 ```
 lovsider/
-├── chrome-extension/     # 扩展入口（manifest、background）
+├── chrome-extension/     # Extension entry (manifest, background)
 ├── pages/
-│   ├── side-panel/       # 侧边栏主界面
-│   ├── content/          # 内容脚本
-│   ├── popup/            # 弹出窗口
-│   └── options/          # 设置页面
+│   ├── side-panel/       # Sidebar main UI
+│   ├── content/          # Content scripts
+│   ├── popup/            # Popup window
+│   └── options/          # Settings page
 └── packages/
-    ├── shared/           # 共享工具库
-    ├── storage/          # 存储封装
-    ├── ui/               # UI 组件
-    └── i18n/             # 国际化
+    ├── shared/           # Shared utilities
+    ├── storage/          # Storage wrapper
+    ├── ui/               # UI components
+    └── i18n/             # Internationalization
 ```
 
-## 技术栈
+## Tech Stack
 
-- **框架**: React 19 + TypeScript
-- **构建**: Vite + Turborepo
-- **样式**: Tailwind CSS + shadcn/ui
-- **扩展**: Chrome Extension Manifest V3
+- **Framework**: React 19 + TypeScript
+- **Build**: Vite + Turborepo
+- **Styling**: Tailwind CSS + shadcn/ui
+- **Extension**: Chrome Extension Manifest V3
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+Shift+S` | Toggle sidebar |
+| `Escape` | Exit selection mode |
 
 ## License
 
-MIT
+[MIT](LICENSE)
