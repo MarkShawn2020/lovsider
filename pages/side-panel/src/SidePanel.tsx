@@ -1,4 +1,5 @@
 import '@src/SidePanel.css';
+import { ClaudeExportPanel } from './components/ClaudeExportPanel';
 import { FloatingBadgePanel } from './components/FloatingBadgePanel';
 import { SitePresetsPanel } from './components/SitePresetsPanel';
 import { useStorage, withErrorBoundary, withSuspense, commandProcessor } from '@extension/shared';
@@ -685,6 +686,11 @@ datetime: ${datetime}
           title="预设配置">
           ⚙️
         </button>
+      </div>
+
+      {/* Claude 导出面板 */}
+      <div className="mb-4">
+        <ClaudeExportPanel />
       </div>
 
       {/* 操作按钮区域 */}

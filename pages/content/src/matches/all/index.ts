@@ -527,6 +527,100 @@ chrome.runtime?.onMessage?.addListener(
           error: error instanceof Error ? error.message : '填充失败',
         });
       }
+    } else if (msg.action === 'getClaudeOrgId') {
+      // 从 Claude 页面获取 orgId
+      try {
+        // 方法1: 从 URL 或 localStorage 中获取
+        let orgId: string | null = null;
+
+        // 尝试从 localStorage 获取
+        const lsKeys = Object.keys(localStorage);
+        for (const key of lsKeys) {
+          if (key.includes('organization') || key.includes('org')) {
+            try {
+              const value = localStorage.getItem(key);
+              if (value) {
+                const parsed = JSON.parse(value);
+                if (parsed.uuid || parsed.id || parsed.organizationId) {
+                  orgId = parsed.uuid || parsed.id || parsed.organizationId;
+                  break;
+                }
+              }
+            } catch {
+              // 忽略解析错误
+            }
+          }
+        }
+
+        // 方法2: 从页面中的 script 标签或 __NEXT_DATA__ 获取
+        if (!orgId) {
+          const nextDataEl = document.getElementById('__NEXT_DATA__');
+          if (nextDataEl) {
+            try {
+              const nextData = JSON.parse(nextDataEl.textContent || '{}');
+              // 尝试从各种可能的路径获取 orgId
+              orgId =
+                nextData?.props?.pageProps?.organizationId ||
+                nextData?.props?.pageProps?.org?.uuid ||
+                nextData?.props?.initialState?.organization?.uuid;
+            } catch {
+              // 忽略解析错误
+            }
+          }
+        }
+
+        // 方法3: 从页面网络请求中嗅探（查找已发起的请求）
+        if (!orgId) {
+          // 尝试从 performance entries 中获取
+          const entries = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
+          for (const entry of entries) {
+            const match = entry.name.match(/\/organizations\/([a-f0-9-]+)\//);
+            if (match) {
+              orgId = match[1];
+              break;
+            }
+          }
+        }
+
+        sendResponse({ success: !!orgId, orgId });
+      } catch (error) {
+        console.error('获取 Claude orgId 失败:', error);
+        sendResponse({ success: false, error: error instanceof Error ? error.message : '获取失败' });
+      }
+    } else if (msg.action === 'fetchClaudeChat') {
+      // 在页面上下文中 fetch Claude 聊天数据
+      const { chatId, orgId } = msg as { chatId?: string; orgId?: string };
+
+      if (!chatId || !orgId) {
+        sendResponse({ success: false, error: '缺少 chatId 或 orgId' });
+        return false;
+      }
+
+      // 使用 fetch API 获取聊天数据（会自动携带 cookies）
+      fetch(
+        `https://claude.ai/api/organizations/${orgId}/chat_conversations/${chatId}?tree=True&rendering_mode=messages&render_all_tools=true`,
+        {
+          credentials: 'include',
+          headers: {
+            Accept: 'application/json',
+          },
+        },
+      )
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          sendResponse({ success: true, data });
+        })
+        .catch(error => {
+          console.error('获取 Claude 聊天数据失败:', error);
+          sendResponse({ success: false, error: error instanceof Error ? error.message : '获取失败' });
+        });
+
+      return true; // 保持消息通道开放
     }
 
     return false;
