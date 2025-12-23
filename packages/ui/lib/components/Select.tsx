@@ -1,4 +1,5 @@
 import { cn } from '../utils';
+import { ChevronDownIcon } from '@radix-ui/react-icons';
 import { useState, useRef, useEffect } from 'react';
 
 interface SelectOption {
@@ -62,13 +63,7 @@ export const Select = ({ options, value, onChange, onValueChange, placeholder, c
             {selectedOption?.label || placeholder || '请选择...'}
           </span>
         </div>
-        <svg
-          className={cn('h-4 w-4 text-gray-500 transition-transform', isOpen && 'rotate-180')}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        <ChevronDownIcon className={cn('h-4 w-4 text-gray-500 transition-transform', isOpen && 'rotate-180')} />
       </button>
 
       {isOpen && (

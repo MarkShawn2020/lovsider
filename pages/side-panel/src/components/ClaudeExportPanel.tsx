@@ -1,5 +1,17 @@
 import { claudeExportStorage, downloadSettingsStorage } from '@extension/storage';
 import { cn } from '@extension/ui';
+import {
+  LightningBoltIcon,
+  CheckIcon,
+  DownloadIcon,
+  ClipboardCopyIcon,
+  ChevronDownIcon,
+  CheckCircledIcon,
+  FileTextIcon,
+  ChatBubbleIcon,
+  CrossCircledIcon,
+  RocketIcon,
+} from '@radix-ui/react-icons';
 import { useState, useEffect, useCallback } from 'react';
 import type { ClaudeExportOptions } from '@extension/storage';
 
@@ -296,8 +308,7 @@ messages: ${data.chat_messages?.length || 0}
     };
 
     // 只有在 Downloads 子目录时才设置路径
-    // __CHROME_DEFAULT__ 或空字符串表示让 Chrome 使用它自己记住的位置
-    if (settings.lastUsedPath && settings.lastUsedPath !== '__CHROME_DEFAULT__') {
+    if (settings.lastUsedPath) {
       downloadOptions.filename = `${settings.lastUsedPath}/${filename}`;
     }
 
@@ -308,7 +319,7 @@ messages: ${data.chat_messages?.length || 0}
       const onChanged = (delta: chrome.downloads.DownloadDelta) => {
         if (delta.id === downloadId) {
           if (delta.state?.current === 'complete') {
-            chrome.downloads.search({ id: downloadId }, results => {
+            chrome.downloads.search({ id: downloadId }, async results => {
               if (results.length > 0 && results[0].filename) {
                 const path = results[0].filename;
                 const formattedPath = path.includes(' ') ? `'${path}'` : path;
@@ -317,18 +328,24 @@ messages: ${data.chat_messages?.length || 0}
                 // 更新最后使用的路径
                 const pathParts = path.split(/[/\\]/);
                 pathParts.pop();
+                const separator = path.includes('\\') ? '\\' : '/';
+                let directoryPath = pathParts.join(separator);
+                if (!directoryPath && path.startsWith('/')) {
+                  directoryPath = '/';
+                } else if (/^[A-Za-z]:$/.test(directoryPath)) {
+                  directoryPath = `${directoryPath}${separator}`;
+                }
                 const downloadsIndex = pathParts.findIndex(
                   part => part.toLowerCase() === 'downloads' || part === '下载',
                 );
-                if (downloadsIndex !== -1) {
-                  // 在 Downloads 目录下：提取相对路径（根目录则为空字符串）
-                  const relativePath =
-                    downloadsIndex < pathParts.length - 1 ? pathParts.slice(downloadsIndex + 1).join('/') : '';
-                  downloadSettingsStorage.setLastUsedPath(relativePath);
-                } else {
-                  // 在 Downloads 之外：用特殊标记，让 Chrome 使用它记住的位置
-                  downloadSettingsStorage.setLastUsedPath('__CHROME_DEFAULT__');
-                }
+                const relativePath =
+                  downloadsIndex !== -1 && downloadsIndex < pathParts.length - 1
+                    ? pathParts.slice(downloadsIndex + 1).join('/')
+                    : '';
+                await downloadSettingsStorage.updateSettings({
+                  lastUsedPath: relativePath,
+                  lastUsedAbsolutePath: directoryPath,
+                });
               }
               chrome.downloads.onChanged.removeListener(onChanged);
               resolve();
@@ -373,7 +390,7 @@ messages: ${data.chat_messages?.length || 0}
     return (
       <div className="bg-muted/50 rounded-xl p-3">
         <div className="text-muted-foreground flex items-center gap-2 text-sm">
-          <span>💡</span>
+          <LightningBoltIcon className="h-4 w-4" />
           <span>访问 claude.ai 可导出聊天记录</span>
         </div>
       </div>
@@ -396,7 +413,7 @@ messages: ${data.chat_messages?.length || 0}
     <div className="border-border bg-card rounded-xl border p-4">
       {/* 标题 */}
       <div className="mb-3 flex items-center gap-2">
-        <span className="text-lg">🤖</span>
+        <RocketIcon className="text-primary h-5 w-5" />
         <h3 className="text-foreground font-medium">Claude 对话</h3>
       </div>
 
@@ -405,7 +422,7 @@ messages: ${data.chat_messages?.length || 0}
         <>
           <div className="bg-muted mb-3 rounded-lg p-2">
             <div className="text-foreground flex items-center gap-2 text-sm">
-              <span className="text-green-600">✓</span>
+              <CheckIcon className="h-4 w-4 text-green-600" />
               <span className="truncate">{chatTitle || '已检测到对话'}</span>
             </div>
           </div>
@@ -415,13 +432,13 @@ messages: ${data.chat_messages?.length || 0}
             <button
               onClick={exportMarkdown}
               className="bg-primary text-primary-foreground hover:bg-primary/90 flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium">
-              <span>📥</span>
+              <DownloadIcon className="h-4 w-4" />
               <span>Markdown</span>
             </button>
             <button
               onClick={exportJSON}
               className="border-border bg-card text-foreground hover:bg-accent flex flex-1 items-center justify-center gap-1.5 rounded-lg border py-2 text-sm font-medium">
-              <span>📋</span>
+              <ClipboardCopyIcon className="h-4 w-4" />
               <span>JSON</span>
             </button>
           </div>
@@ -431,7 +448,7 @@ messages: ${data.chat_messages?.length || 0}
             onClick={() => setShowOptions(!showOptions)}
             className="text-muted-foreground hover:text-foreground flex w-full items-center justify-between text-sm">
             <span>导出选项</span>
-            <span className={cn('transition-transform', showOptions && 'rotate-180')}>▾</span>
+            <ChevronDownIcon className={cn('h-4 w-4 transition-transform', showOptions && 'rotate-180')} />
           </button>
 
           {showOptions && (
@@ -473,14 +490,20 @@ messages: ${data.chat_messages?.length || 0}
       {status === 'success' && exportResult && (
         <div className="space-y-3">
           <div className="text-foreground flex items-center gap-2 text-sm">
-            <span className="text-green-600">✅</span>
+            <CheckCircledIcon className="h-4 w-4 text-green-600" />
             <span>导出成功!</span>
           </div>
 
           <div className="bg-muted rounded-lg p-3">
-            <div className="text-foreground mb-1 truncate text-sm font-medium">📄 {exportResult.filename}</div>
-            <div className="text-muted-foreground text-xs">
-              💬 {exportResult.messageCount} 条消息 · {exportResult.fileSize}
+            <div className="text-foreground mb-1 flex items-center gap-1.5 truncate text-sm font-medium">
+              <FileTextIcon className="h-4 w-4 shrink-0" />
+              <span className="truncate">{exportResult.filename}</span>
+            </div>
+            <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
+              <ChatBubbleIcon className="h-3 w-3" />
+              <span>
+                {exportResult.messageCount} 条消息 · {exportResult.fileSize}
+              </span>
             </div>
           </div>
 
@@ -498,7 +521,7 @@ messages: ${data.chat_messages?.length || 0}
       {status === 'error' && (
         <div className="space-y-3">
           <div className="text-destructive flex items-center gap-2 text-sm">
-            <span>❌</span>
+            <CrossCircledIcon className="h-4 w-4" />
             <span>{error}</span>
           </div>
 

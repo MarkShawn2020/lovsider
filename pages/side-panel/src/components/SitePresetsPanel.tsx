@@ -1,4 +1,5 @@
 import { sitePresetsStorage } from '@extension/storage';
+import { UploadIcon, DownloadIcon, Cross2Icon, ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 import { useState, useEffect } from 'react';
 import type { SitePreset, SitePresetsSettings } from '@extension/storage';
 
@@ -278,18 +279,20 @@ export const SitePresetsPanel = ({ onClose }: SitePresetsPanelProps) => {
         <div className="flex gap-2">
           <button
             onClick={handleExport}
-            className="bg-background-ivory-medium text-text-faded hover:bg-swatch-cloud-light rounded px-2 py-1 text-xs dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600">
-            📤 导出
+            className="bg-background-ivory-medium text-text-faded hover:bg-swatch-cloud-light flex items-center gap-1 rounded px-2 py-1 text-xs dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600">
+            <UploadIcon className="h-3 w-3" />
+            <span>导出</span>
           </button>
           <button
             onClick={handleImport}
-            className="bg-background-ivory-medium text-text-faded hover:bg-swatch-cloud-light rounded px-2 py-1 text-xs dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600">
-            📥 导入
+            className="bg-background-ivory-medium text-text-faded hover:bg-swatch-cloud-light flex items-center gap-1 rounded px-2 py-1 text-xs dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600">
+            <DownloadIcon className="h-3 w-3" />
+            <span>导入</span>
           </button>
           <button
             onClick={onClose}
             className="bg-background-ivory-medium text-text-faded hover:bg-swatch-cloud-light rounded px-2 py-1 text-xs dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600">
-            ✕
+            <Cross2Icon className="h-3 w-3" />
           </button>
         </div>
       </div>
@@ -315,7 +318,11 @@ export const SitePresetsPanel = ({ onClose }: SitePresetsPanelProps) => {
                         <button
                           onClick={() => setExpandedBuiltInPreset(isExpanded ? null : preset.id)}
                           className="text-text-faded hover:text-text-main text-xs">
-                          {isExpanded ? '▼' : '▶'}
+                          {isExpanded ? (
+                            <ChevronDownIcon className="h-3 w-3" />
+                          ) : (
+                            <ChevronRightIcon className="h-3 w-3" />
+                          )}
                         </button>
                         <div className="text-text-main text-sm font-medium dark:text-gray-200">
                           {preset.name}
@@ -367,7 +374,7 @@ export const SitePresetsPanel = ({ onClose }: SitePresetsPanelProps) => {
                                       handleUpdateBuiltInPreset(preset.id, 'patterns', newPatterns);
                                     }}
                                     className="text-text-faded hover:text-background-clay text-xs">
-                                    ✕
+                                    <Cross2Icon className="h-3 w-3" />
                                   </button>
                                 )}
                               </div>
@@ -405,7 +412,7 @@ export const SitePresetsPanel = ({ onClose }: SitePresetsPanelProps) => {
                                       handleUpdateBuiltInPreset(preset.id, 'selectors', newSelectors);
                                     }}
                                     className="text-text-faded hover:text-background-clay text-xs">
-                                    ✕
+                                    <Cross2Icon className="h-3 w-3" />
                                   </button>
                                 )}
                               </div>
@@ -539,7 +546,7 @@ export const SitePresetsPanel = ({ onClose }: SitePresetsPanelProps) => {
                           })
                         }
                         className="text-text-faded hover:text-background-clay text-xs">
-                        ✕
+                        <Cross2Icon className="h-3 w-3" />
                       </button>
                     )}
                   </div>
@@ -581,7 +588,7 @@ export const SitePresetsPanel = ({ onClose }: SitePresetsPanelProps) => {
                           })
                         }
                         className="text-text-faded hover:text-background-clay text-xs">
-                        ✕
+                        <Cross2Icon className="h-3 w-3" />
                       </button>
                     )}
                   </div>

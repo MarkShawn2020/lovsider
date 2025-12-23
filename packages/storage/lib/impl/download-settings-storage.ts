@@ -6,6 +6,7 @@ export interface DownloadSettings {
   defaultPath: string;
   useDefaultPath: boolean;
   lastUsedPath: string;
+  lastUsedAbsolutePath: string;
   askForLocation: boolean; // 是否每次都询问位置
 }
 
@@ -13,15 +14,26 @@ export interface DownloadSettingsStateType {
   settings: DownloadSettings;
 }
 
+const defaultSettings: DownloadSettings = {
+  defaultPath: 'Downloads',
+  useDefaultPath: false,
+  lastUsedPath: '',
+  lastUsedAbsolutePath: '',
+  askForLocation: true,
+};
+
+const normalizeRelativePath = (path?: string) => {
+  if (!path || path === '__CHROME_DEFAULT__' || path === 'Downloads') {
+    return '';
+  }
+
+  return path;
+};
+
 const storage = createStorage<DownloadSettingsStateType>(
   'download-settings-storage-key',
   {
-    settings: {
-      defaultPath: 'Downloads',
-      useDefaultPath: false,
-      lastUsedPath: 'Downloads',
-      askForLocation: true,
-    },
+    settings: defaultSettings,
   },
   {
     storageEnum: StorageEnum.Local,
@@ -44,7 +56,14 @@ export const downloadSettingsStorage: DownloadSettingsStorageType = {
   // 获取下载设置
   getSettings: async () => {
     const state = await storage.get();
-    return state.settings;
+    const settings = state.settings ?? defaultSettings;
+
+    return {
+      ...defaultSettings,
+      ...settings,
+      lastUsedPath: normalizeRelativePath(settings.lastUsedPath),
+      lastUsedAbsolutePath: settings.lastUsedAbsolutePath ?? defaultSettings.lastUsedAbsolutePath,
+    };
   },
 
   // 更新设置

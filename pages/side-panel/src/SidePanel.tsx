@@ -11,6 +11,26 @@ import {
   floatingBadgeStorage,
 } from '@extension/storage';
 import { cn, ErrorDisplay, LoadingSpinner, Select } from '@extension/ui';
+import {
+  Cross2Icon,
+  ExclamationTriangleIcon,
+  MagicWandIcon,
+  TargetIcon,
+  StopIcon,
+  ClipboardCopyIcon,
+  Pencil2Icon,
+  CheckIcon,
+  DownloadIcon,
+  ChevronDownIcon,
+  FileTextIcon,
+  GearIcon,
+  LightningBoltIcon,
+  MixerHorizontalIcon,
+  PersonIcon,
+  CheckCircledIcon,
+  CrossCircledIcon,
+  KeyboardIcon,
+} from '@radix-ui/react-icons';
 import { useState, useEffect } from 'react';
 import type { CommandResult } from '@extension/shared';
 
@@ -20,7 +40,8 @@ const DownloadSettingsPanel = ({ onClose }: { onClose: () => void }) => {
     askForLocation: true,
     useDefaultPath: false,
     defaultPath: 'Downloads',
-    lastUsedPath: 'Downloads',
+    lastUsedPath: '',
+    lastUsedAbsolutePath: '',
   });
 
   useEffect(() => {
@@ -85,7 +106,7 @@ const DownloadSettingsPanel = ({ onClose }: { onClose: () => void }) => {
       <div className="flex items-center justify-between">
         <h4 className="text-foreground font-medium">下载设置</h4>
         <button onClick={onClose} className="bg-secondary text-muted-foreground hover:bg-secondary/80 rounded-lg p-1.5">
-          ✕
+          <Cross2Icon className="h-4 w-4" />
         </button>
       </div>
 
@@ -115,17 +136,19 @@ const DownloadSettingsPanel = ({ onClose }: { onClose: () => void }) => {
         </div>
       )}
 
-      {settings.lastUsedPath && settings.lastUsedPath !== 'Downloads' && (
+      {Boolean(settings.lastUsedAbsolutePath || settings.lastUsedPath) && (
         <div>
           <label className="text-muted-foreground mb-1.5 block text-sm">最后使用的路径</label>
-          <div className="bg-muted text-foreground rounded-lg px-3 py-2 text-sm">{settings.lastUsedPath}</div>
+          <div className="bg-muted text-foreground rounded-lg px-3 py-2 text-sm">
+            {settings.lastUsedAbsolutePath || settings.lastUsedPath}
+          </div>
         </div>
       )}
 
       {!settings.askForLocation && (
         <div className="bg-muted rounded-xl p-3">
           <div className="mb-1 flex items-center gap-2">
-            <span>⚠️</span>
+            <ExclamationTriangleIcon className="h-4 w-4 text-amber-500" />
             <span className="text-foreground text-sm font-medium">注意</span>
           </div>
           <p className="text-muted-foreground text-xs">
@@ -490,8 +513,7 @@ datetime: ${datetime}
     // 始终显示保存对话框
     downloadOptions.saveAs = true;
     // 只有在 Downloads 子目录时才设置路径，让 Chrome 打开到该子目录
-    // __CHROME_DEFAULT__ 或空字符串表示让 Chrome 使用它自己记住的位置
-    if (settings.lastUsedPath && settings.lastUsedPath !== '__CHROME_DEFAULT__') {
+    if (settings.lastUsedPath) {
       downloadOptions.filename = `${settings.lastUsedPath}/${filename}`;
     }
 
@@ -505,7 +527,7 @@ datetime: ${datetime}
           if (results.length > 0) {
             const downloadedFile = results[0];
             if (downloadedFile.filename) {
-              // 提取相对于 Downloads 文件夹的路径
+              // 提取目录路径并计算 Downloads 下的相对路径
               const absolutePath = downloadedFile.filename;
 
               // 复制文件路径到剪贴板，有空格时用单引号包裹
@@ -514,19 +536,26 @@ datetime: ${datetime}
 
               const pathParts = absolutePath.split(/[/\\]/);
               pathParts.pop(); // 移除文件名
+              const separator = absolutePath.includes('\\') ? '\\' : '/';
+              let directoryPath = pathParts.join(separator);
+              if (!directoryPath && absolutePath.startsWith('/')) {
+                directoryPath = '/';
+              } else if (/^[A-Za-z]:$/.test(directoryPath)) {
+                directoryPath = `${directoryPath}${separator}`;
+              }
 
               // 查找 Downloads 文件夹在路径中的位置
               const downloadsIndex = pathParts.findIndex(part => part.toLowerCase() === 'downloads' || part === '下载');
 
-              if (downloadsIndex !== -1) {
-                // 在 Downloads 目录下：提取相对路径（根目录则为空字符串）
-                const relativePath =
-                  downloadsIndex < pathParts.length - 1 ? pathParts.slice(downloadsIndex + 1).join('/') : '';
-                await downloadSettingsStorage.setLastUsedPath(relativePath);
-              } else {
-                // 在 Downloads 之外：用特殊标记，让 Chrome 使用它记住的位置
-                await downloadSettingsStorage.setLastUsedPath('__CHROME_DEFAULT__');
-              }
+              const relativePath =
+                downloadsIndex !== -1 && downloadsIndex < pathParts.length - 1
+                  ? pathParts.slice(downloadsIndex + 1).join('/')
+                  : '';
+
+              await downloadSettingsStorage.updateSettings({
+                lastUsedPath: relativePath,
+                lastUsedAbsolutePath: directoryPath,
+              });
             }
           }
         });
@@ -685,7 +714,7 @@ datetime: ${datetime}
           onClick={() => setShowPresetsPanel(!showPresetsPanel)}
           className="bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-lg p-2 transition-colors"
           title="预设配置">
-          ⚙️
+          <GearIcon className="h-5 w-5" />
         </button>
       </div>
 
@@ -701,28 +730,28 @@ datetime: ${datetime}
           <button
             onClick={smartSelect}
             className="bg-primary text-primary-foreground hover:bg-primary/90 flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-sm font-medium">
-            <span className="shrink-0">🤖</span>
+            <MagicWandIcon className="h-4 w-4 shrink-0" />
             <span className="truncate">智能选择</span>
           </button>
           {!isSelecting ? (
             <button
               onClick={startSelection}
               className="border-border bg-card text-card-foreground hover:bg-accent flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg border px-2 py-2.5 text-sm font-medium">
-              <span className="shrink-0">🎯</span>
+              <TargetIcon className="h-4 w-4 shrink-0" />
               <span className="truncate">手动选择</span>
             </button>
           ) : (
             <button
               onClick={stopSelection}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-sm font-medium">
-              <span className="shrink-0">⏹️</span>
+              <StopIcon className="h-4 w-4 shrink-0" />
               <span className="truncate">停止选择</span>
             </button>
           )}
           <button
             onClick={pasteFromClipboard}
             className="border-border bg-card text-card-foreground hover:bg-accent flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg border px-2 py-2.5 text-sm font-medium">
-            <span className="shrink-0">📋</span>
+            <ClipboardCopyIcon className="h-4 w-4 shrink-0" />
             <span className="truncate">粘贴</span>
           </button>
         </div>
@@ -745,13 +774,13 @@ datetime: ${datetime}
                 onClick={reselectFromPath}
                 className="bg-secondary text-foreground hover:bg-secondary/80 rounded-lg p-2 text-sm"
                 title="重新选择">
-                🎯
+                <TargetIcon className="h-4 w-4" />
               </button>
               <button
                 onClick={startEditPath}
                 className="bg-secondary text-foreground hover:bg-secondary/80 rounded-lg p-2 text-sm"
                 title="编辑路径">
-                ✏️
+                <Pencil2Icon className="h-4 w-4" />
               </button>
               <button
                 onClick={copyDomPath}
@@ -762,7 +791,7 @@ datetime: ${datetime}
                     : 'bg-secondary text-foreground hover:bg-secondary/80',
                 )}
                 title={domPathCopied ? '已复制!' : '复制路径'}>
-                {domPathCopied ? '✓' : '📋'}
+                {domPathCopied ? <CheckIcon className="h-4 w-4" /> : <ClipboardCopyIcon className="h-4 w-4" />}
               </button>
             </div>
           </div>
@@ -811,13 +840,19 @@ datetime: ${datetime}
                   <button
                     onClick={exportAction === 'download' ? downloadMarkdown : copyToClipboard}
                     className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-1.5 rounded-l-lg px-3 py-1.5 text-sm font-medium">
-                    <span>{exportAction === 'download' ? '📥' : markdownCopied ? '✓' : '📋'}</span>
+                    {exportAction === 'download' ? (
+                      <DownloadIcon className="h-4 w-4" />
+                    ) : markdownCopied ? (
+                      <CheckIcon className="h-4 w-4" />
+                    ) : (
+                      <ClipboardCopyIcon className="h-4 w-4" />
+                    )}
                     <span>{exportAction === 'download' ? '下载' : markdownCopied ? '已复制' : '复制'}</span>
                   </button>
                   <button
                     onClick={() => setShowExportMenu(!showExportMenu)}
                     className="bg-primary text-primary-foreground hover:bg-primary/90 border-primary-foreground/20 rounded-r-lg border-l px-2 py-1.5">
-                    <span className={cn('inline-block transition-transform', showExportMenu && 'rotate-180')}>▾</span>
+                    <ChevronDownIcon className={cn('h-4 w-4 transition-transform', showExportMenu && 'rotate-180')} />
                   </button>
                 </div>
                 {showExportMenu && (
@@ -831,7 +866,7 @@ datetime: ${datetime}
                         'flex w-full items-center gap-2 px-3 py-2 text-sm',
                         exportAction === 'download' ? 'bg-muted text-foreground' : 'text-foreground hover:bg-muted',
                       )}>
-                      <span>📥</span>
+                      <DownloadIcon className="h-4 w-4" />
                       <span>下载</span>
                     </button>
                     <button
@@ -843,7 +878,7 @@ datetime: ${datetime}
                         'flex w-full items-center gap-2 px-3 py-2 text-sm',
                         exportAction === 'copy' ? 'bg-muted text-foreground' : 'text-foreground hover:bg-muted',
                       )}>
-                      <span>📋</span>
+                      <ClipboardCopyIcon className="h-4 w-4" />
                       <span>复制</span>
                     </button>
                   </div>
@@ -888,7 +923,7 @@ datetime: ${datetime}
           </div>
         ) : (
           <div className="bg-muted flex h-full flex-col items-center justify-center rounded-xl py-12">
-            <div className="mb-3 text-5xl">📄</div>
+            <FileTextIcon className="text-muted-foreground mb-3 h-12 w-12" />
             <p className="text-foreground mb-1 font-medium">准备捕获内容</p>
             <p className="text-muted-foreground text-sm">点击上方按钮选择网页元素</p>
           </div>
@@ -916,15 +951,20 @@ const ToolsModule = () => {
             onClick={() => setShowFloatingBadgePanel(!showFloatingBadgePanel)}
             className="flex w-full items-center justify-between text-left">
             <div className="flex items-center gap-3">
-              <span className="bg-secondary flex h-10 w-10 items-center justify-center rounded-lg text-lg">🎯</span>
+              <span className="bg-secondary flex h-10 w-10 items-center justify-center rounded-lg">
+                <TargetIcon className="h-5 w-5" />
+              </span>
               <div>
                 <h3 className="text-card-foreground font-medium">悬浮徽章</h3>
                 <p className="text-muted-foreground text-sm">配置页面悬浮按钮</p>
               </div>
             </div>
-            <span className={cn('text-muted-foreground transition-transform', showFloatingBadgePanel && 'rotate-180')}>
-              ▼
-            </span>
+            <ChevronDownIcon
+              className={cn(
+                'text-muted-foreground h-5 w-5 transition-transform',
+                showFloatingBadgePanel && 'rotate-180',
+              )}
+            />
           </button>
 
           {/* 展开的设置面板 */}
@@ -941,16 +981,20 @@ const ToolsModule = () => {
             onClick={() => setShowDownloadSettingsPanel(!showDownloadSettingsPanel)}
             className="flex w-full items-center justify-between text-left">
             <div className="flex items-center gap-3">
-              <span className="bg-secondary flex h-10 w-10 items-center justify-center rounded-lg text-lg">📥</span>
+              <span className="bg-secondary flex h-10 w-10 items-center justify-center rounded-lg">
+                <DownloadIcon className="h-5 w-5" />
+              </span>
               <div>
                 <h3 className="text-card-foreground font-medium">下载设置</h3>
                 <p className="text-muted-foreground text-sm">配置文件下载行为</p>
               </div>
             </div>
-            <span
-              className={cn('text-muted-foreground transition-transform', showDownloadSettingsPanel && 'rotate-180')}>
-              ▼
-            </span>
+            <ChevronDownIcon
+              className={cn(
+                'text-muted-foreground h-5 w-5 transition-transform',
+                showDownloadSettingsPanel && 'rotate-180',
+              )}
+            />
           </button>
 
           {/* 展开的设置面板 */}
@@ -964,7 +1008,7 @@ const ToolsModule = () => {
         {/* 提示信息卡片 */}
         <div className="bg-muted rounded-xl p-4">
           <div className="mb-2 flex items-center gap-2">
-            <span className="text-lg">💡</span>
+            <LightningBoltIcon className="h-5 w-5 text-amber-500" />
             <span className="text-foreground font-medium">使用提示</span>
           </div>
           <ul className="text-muted-foreground space-y-1 text-sm">
@@ -1280,7 +1324,7 @@ const DeveloperModule = () => {
 
         {commandHistory.length === 0 ? (
           <div className="text-text-faded py-8 text-center">
-            <div className="mb-2 text-4xl">⌨️</div>
+            <KeyboardIcon className="mx-auto mb-2 h-10 w-10" />
             <p>输入命令开始使用开发者工具</p>
           </div>
         ) : (
@@ -1299,7 +1343,11 @@ const DeveloperModule = () => {
                       : 'bg-background-clay/10 text-background-clay',
                   )}>
                   <div className="flex items-start">
-                    <span className="mr-2 text-lg">{entry.result.success ? '✅' : '❌'}</span>
+                    {entry.result.success ? (
+                      <CheckCircledIcon className="mr-2 h-5 w-5 shrink-0" />
+                    ) : (
+                      <CrossCircledIcon className="mr-2 h-5 w-5 shrink-0" />
+                    )}
                     <div className="flex-1">
                       <p className="whitespace-pre-wrap">{entry.result.message}</p>
                       {entry.result.data ? (
@@ -1327,10 +1375,10 @@ const SidePanel = () => {
   const [activeTab, setActiveTab] = useState('capture');
 
   const tabs = [
-    { id: 'capture', name: '捕获', icon: '🎯' },
-    { id: 'dev', name: '开发', icon: '🛠️' },
-    { id: 'tools', name: '设置', icon: '⚙️' },
-    { id: 'profile', name: '我的', icon: '👤' },
+    { id: 'capture', name: '捕获', icon: <TargetIcon className="h-5 w-5" /> },
+    { id: 'dev', name: '开发', icon: <MixerHorizontalIcon className="h-5 w-5" /> },
+    { id: 'tools', name: '设置', icon: <GearIcon className="h-5 w-5" /> },
+    { id: 'profile', name: '我的', icon: <PersonIcon className="h-5 w-5" /> },
   ];
 
   return (
@@ -1353,7 +1401,7 @@ const SidePanel = () => {
                 ? 'border-primary bg-background-oat text-primary border-b-2'
                 : 'text-text-faded hover:text-text-main',
             )}>
-            <span className="mb-1 text-xl">{tab.icon}</span>
+            <span className="mb-1">{tab.icon}</span>
             <span className="text-xs leading-tight">{tab.name}</span>
           </button>
         ))}
@@ -1366,7 +1414,7 @@ const SidePanel = () => {
         {activeTab === 'tools' && <ToolsModule />}
         {activeTab !== 'capture' && activeTab !== 'dev' && activeTab !== 'tools' && (
           <div className="p-4 text-center">
-            <div className="mb-4 text-4xl">🚧</div>
+            <ExclamationTriangleIcon className="text-muted-foreground mx-auto mb-4 h-10 w-10" />
             <h3 className="mb-2 text-lg font-medium">{tabs.find(t => t.id === activeTab)?.name}</h3>
             <p className="text-text-faded">功能开发中...</p>
           </div>

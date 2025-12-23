@@ -1,5 +1,12 @@
 import { floatingBadgeStorage } from '@extension/storage';
 import { cn } from '@extension/ui';
+import {
+  CheckCircledIcon,
+  CrossCircledIcon,
+  DrawingPinFilledIcon,
+  Cross2Icon,
+  LightningBoltIcon,
+} from '@radix-ui/react-icons';
 import { useState, useEffect } from 'react';
 import type { FloatingBadgeConfig } from '@extension/storage';
 
@@ -22,7 +29,7 @@ export const FloatingBadgePanel = ({ onClose }: { onClose: () => void }) => {
   const [whitelist, setWhitelist] = useState<string[]>([]);
   const [useWhitelist, setUseWhitelist] = useState(false);
   const [newDomain, setNewDomain] = useState('');
-  const [saveFeedback, setSaveFeedback] = useState('');
+  const [saveFeedback, setSaveFeedback] = useState<{ success: boolean; message: string } | null>(null);
   const [currentHostname, setCurrentHostname] = useState('');
 
   useEffect(() => {
@@ -71,12 +78,12 @@ export const FloatingBadgePanel = ({ onClose }: { onClose: () => void }) => {
       setConfig(newConfig);
       await floatingBadgeStorage.updateConfig({ [key]: value });
 
-      setSaveFeedback('✅ 设置已保存');
-      setTimeout(() => setSaveFeedback(''), 2000);
+      setSaveFeedback({ success: true, message: '设置已保存' });
+      setTimeout(() => setSaveFeedback(null), 2000);
     } catch (error) {
       console.error('更新设置失败:', error);
-      setSaveFeedback('❌ 保存失败');
-      setTimeout(() => setSaveFeedback(''), 2000);
+      setSaveFeedback({ success: false, message: '保存失败' });
+      setTimeout(() => setSaveFeedback(null), 2000);
     }
   };
 
@@ -86,12 +93,12 @@ export const FloatingBadgePanel = ({ onClose }: { onClose: () => void }) => {
       setEnabled(newValue);
       await floatingBadgeStorage.setEnabled(newValue);
 
-      setSaveFeedback('✅ 设置已保存');
-      setTimeout(() => setSaveFeedback(''), 2000);
+      setSaveFeedback({ success: true, message: '设置已保存' });
+      setTimeout(() => setSaveFeedback(null), 2000);
     } catch (error) {
       console.error('切换启用状态失败:', error);
-      setSaveFeedback('❌ 操作失败');
-      setTimeout(() => setSaveFeedback(''), 2000);
+      setSaveFeedback({ success: false, message: '操作失败' });
+      setTimeout(() => setSaveFeedback(null), 2000);
     }
   };
 
@@ -101,12 +108,12 @@ export const FloatingBadgePanel = ({ onClose }: { onClose: () => void }) => {
       setUseWhitelist(newValue);
       await floatingBadgeStorage.setUseWhitelist(newValue);
 
-      setSaveFeedback('✅ 设置已保存');
-      setTimeout(() => setSaveFeedback(''), 2000);
+      setSaveFeedback({ success: true, message: '设置已保存' });
+      setTimeout(() => setSaveFeedback(null), 2000);
     } catch (error) {
       console.error('切换白名单模式失败:', error);
-      setSaveFeedback('❌ 操作失败');
-      setTimeout(() => setSaveFeedback(''), 2000);
+      setSaveFeedback({ success: false, message: '操作失败' });
+      setTimeout(() => setSaveFeedback(null), 2000);
     }
   };
 
@@ -118,12 +125,12 @@ export const FloatingBadgePanel = ({ onClose }: { onClose: () => void }) => {
       setBlacklist([...blacklist, newDomain.trim()]);
       setNewDomain('');
 
-      setSaveFeedback('✅ 已添加到黑名单');
-      setTimeout(() => setSaveFeedback(''), 2000);
+      setSaveFeedback({ success: true, message: '已添加到黑名单' });
+      setTimeout(() => setSaveFeedback(null), 2000);
     } catch (error) {
       console.error('添加到黑名单失败:', error);
-      setSaveFeedback('❌ 添加失败');
-      setTimeout(() => setSaveFeedback(''), 2000);
+      setSaveFeedback({ success: false, message: '添加失败' });
+      setTimeout(() => setSaveFeedback(null), 2000);
     }
   };
 
@@ -132,12 +139,12 @@ export const FloatingBadgePanel = ({ onClose }: { onClose: () => void }) => {
       await floatingBadgeStorage.removeFromBlacklist(domain);
       setBlacklist(blacklist.filter(d => d !== domain));
 
-      setSaveFeedback('✅ 已从黑名单移除');
-      setTimeout(() => setSaveFeedback(''), 2000);
+      setSaveFeedback({ success: true, message: '已从黑名单移除' });
+      setTimeout(() => setSaveFeedback(null), 2000);
     } catch (error) {
       console.error('从黑名单移除失败:', error);
-      setSaveFeedback('❌ 移除失败');
-      setTimeout(() => setSaveFeedback(''), 2000);
+      setSaveFeedback({ success: false, message: '移除失败' });
+      setTimeout(() => setSaveFeedback(null), 2000);
     }
   };
 
@@ -149,12 +156,12 @@ export const FloatingBadgePanel = ({ onClose }: { onClose: () => void }) => {
       setWhitelist([...whitelist, newDomain.trim()]);
       setNewDomain('');
 
-      setSaveFeedback('✅ 已添加到白名单');
-      setTimeout(() => setSaveFeedback(''), 2000);
+      setSaveFeedback({ success: true, message: '已添加到白名单' });
+      setTimeout(() => setSaveFeedback(null), 2000);
     } catch (error) {
       console.error('添加到白名单失败:', error);
-      setSaveFeedback('❌ 添加失败');
-      setTimeout(() => setSaveFeedback(''), 2000);
+      setSaveFeedback({ success: false, message: '添加失败' });
+      setTimeout(() => setSaveFeedback(null), 2000);
     }
   };
 
@@ -163,12 +170,12 @@ export const FloatingBadgePanel = ({ onClose }: { onClose: () => void }) => {
       await floatingBadgeStorage.removeFromWhitelist(domain);
       setWhitelist(whitelist.filter(d => d !== domain));
 
-      setSaveFeedback('✅ 已从白名单移除');
-      setTimeout(() => setSaveFeedback(''), 2000);
+      setSaveFeedback({ success: true, message: '已从白名单移除' });
+      setTimeout(() => setSaveFeedback(null), 2000);
     } catch (error) {
       console.error('从白名单移除失败:', error);
-      setSaveFeedback('❌ 移除失败');
-      setTimeout(() => setSaveFeedback(''), 2000);
+      setSaveFeedback({ success: false, message: '移除失败' });
+      setTimeout(() => setSaveFeedback(null), 2000);
     }
   };
 
@@ -231,7 +238,16 @@ export const FloatingBadgePanel = ({ onClose }: { onClose: () => void }) => {
   return (
     <div className="space-y-4">
       {/* 保存反馈 */}
-      {saveFeedback && <div className="bg-primary/10 text-primary rounded-lg px-3 py-2 text-sm">{saveFeedback}</div>}
+      {saveFeedback && (
+        <div
+          className={cn(
+            'flex items-center gap-2 rounded-lg px-3 py-2 text-sm',
+            saveFeedback.success ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive',
+          )}>
+          {saveFeedback.success ? <CheckCircledIcon className="h-4 w-4" /> : <CrossCircledIcon className="h-4 w-4" />}
+          <span>{saveFeedback.message}</span>
+        </div>
+      )}
 
       {/* 主开关 */}
       <Toggle checked={enabled} onChange={toggleEnabled} label="启用悬浮徽章" />
@@ -351,7 +367,7 @@ export const FloatingBadgePanel = ({ onClose }: { onClose: () => void }) => {
             onClick={getCurrentDomain}
             className="bg-secondary hover:bg-secondary/80 rounded-lg px-3 py-2 text-sm"
             title="使用当前网站">
-            📍
+            <DrawingPinFilledIcon className="h-4 w-4" />
           </button>
         </div>
 
@@ -372,7 +388,7 @@ export const FloatingBadgePanel = ({ onClose }: { onClose: () => void }) => {
                   <button
                     onClick={() => removeFromBlacklist(domain)}
                     className="text-destructive hover:text-destructive/80 text-sm">
-                    ✕
+                    <Cross2Icon className="h-4 w-4" />
                   </button>
                 </div>
               ))}
@@ -391,7 +407,7 @@ export const FloatingBadgePanel = ({ onClose }: { onClose: () => void }) => {
                   <button
                     onClick={() => removeFromWhitelist(domain)}
                     className="text-destructive hover:text-destructive/80 text-sm">
-                    ✕
+                    <Cross2Icon className="h-4 w-4" />
                   </button>
                 </div>
               ))}
@@ -403,7 +419,7 @@ export const FloatingBadgePanel = ({ onClose }: { onClose: () => void }) => {
       {/* 使用说明 */}
       <div className="bg-muted rounded-xl p-3">
         <div className="mb-1.5 flex items-center gap-2">
-          <span>💡</span>
+          <LightningBoltIcon className="h-4 w-4 text-amber-500" />
           <span className="text-foreground text-sm font-medium">使用说明</span>
         </div>
         <ul className="text-muted-foreground space-y-1 text-xs">
