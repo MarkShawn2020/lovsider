@@ -66,6 +66,12 @@ const manifest = {
       css: ['content.css'],
     },
     {
+      // lovinsp 清理脚本 - 必须在 document_start 运行，移除第三方页面的 lovinsp-component
+      matches: ['https://claude.ai/*', 'https://aistudio.google.com/*'],
+      js: ['lovinsp-cleanup.js'],
+      run_at: 'document_start',
+    },
+    {
       matches: ['https://claude.ai/*', 'https://aistudio.google.com/*'],
       js: ['content-ui/all.iife.js'],
     },

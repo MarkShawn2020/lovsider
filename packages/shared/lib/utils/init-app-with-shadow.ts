@@ -45,6 +45,7 @@ export const initAppWithShadow = ({ id, app, inlineCss }: InitAppOptions) => {
 /**
  * 不使用 Shadow DOM 渲染应用（支持 lovinsp click-to-code）
  * 通过 CSS 作用域前缀来隔离样式
+ * 注意：lovinsp 的清理逻辑已移至 vite-config 的 inspectorPrelude，在 bundle 加载时执行
  */
 export const initAppWithLovinsp = ({ id, app, inlineCss }: InitAppOptions) => {
   const root = document.createElement('div');

@@ -1,5 +1,4 @@
 import { claudeExportStorage, downloadSettingsStorage } from '@extension/storage';
-import { cn } from '@extension/ui';
 import { useState, useEffect, useCallback } from 'react';
 import type { ClaudeExportOptions } from '@extension/storage';
 
@@ -339,21 +338,51 @@ messages: ${data.messages.length}
 
   return (
     <>
-      {/* Overlay */}
+      {/* Overlay - 使用内联样式确保在任何环境下都能正确显示 */}
       <div
         role="button"
         tabIndex={0}
-        className="fixed inset-0 z-[2147483646] bg-black/50 transition-opacity"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 999999,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          transition: 'opacity 0.2s',
+        }}
         onClick={closeDialog}
         onKeyDown={e => e.key === 'Escape' && closeDialog()}
       />
 
-      {/* Dialog */}
-      <div className="border-border bg-background fixed left-1/2 top-1/2 z-[2147483647] w-[400px] max-w-[90vw] -translate-x-1/2 -translate-y-1/2 rounded-2xl border p-0 shadow-xl">
+      {/* Dialog - 使用内联样式 */}
+      <div
+        style={{
+          position: 'fixed',
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 9999999,
+          width: '400px',
+          maxWidth: '90vw',
+          borderRadius: '16px',
+          border: '1px solid #D5D3CB',
+          backgroundColor: '#F9F9F7',
+          padding: 0,
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        }}>
         {/* Close button */}
         <button
           onClick={closeDialog}
-          className="text-muted-foreground hover:bg-secondary hover:text-foreground absolute right-4 top-4 rounded-lg p-1.5 transition-colors">
+          style={{
+            position: 'absolute',
+            right: '16px',
+            top: '16px',
+            padding: '6px',
+            borderRadius: '8px',
+            border: 'none',
+            background: 'transparent',
+            color: '#666',
+            cursor: 'pointer',
+          }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M18 6 6 18" />
             <path d="m6 6 12 12" />
@@ -361,54 +390,92 @@ messages: ${data.messages.length}
         </button>
 
         {/* Header */}
-        <div className="border-border border-b px-6 pb-4 pt-5">
-          <h2 className="text-foreground flex items-center gap-2 font-serif text-lg font-semibold">
-            <span className="bg-primary inline-block h-3 w-3 rounded-full" />
+        <div style={{ borderBottom: '1px solid #D5D3CB', padding: '20px 24px 16px' }}>
+          <h2
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '18px',
+              fontWeight: 600,
+              color: '#181818',
+              margin: 0,
+            }}>
+            <span
+              style={{
+                display: 'inline-block',
+                width: '12px',
+                height: '12px',
+                borderRadius: '50%',
+                backgroundColor: '#CC785C',
+              }}
+            />
             导出 {platformName} 对话
           </h2>
-          <p className="text-muted-foreground mt-1 text-sm">选择导出格式和选项</p>
+          <p style={{ marginTop: '4px', fontSize: '14px', color: '#666', margin: '4px 0 0' }}>选择导出格式和选项</p>
         </div>
 
         {/* Body */}
-        <div className="space-y-4 px-6 py-5">
+        <div style={{ padding: '20px 24px' }}>
           {/* Options */}
-          <div className="space-y-3">
-            <label className="flex cursor-pointer items-center gap-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
               <input
                 type="checkbox"
                 checked={options.includeThinking}
                 onChange={() => updateOption('includeThinking', !options.includeThinking)}
-                className="accent-primary h-4 w-4 cursor-pointer"
+                style={{ width: '16px', height: '16px', accentColor: '#CC785C', cursor: 'pointer' }}
               />
-              <span className="text-foreground text-sm">包含思考过程 (thinking)</span>
+              <span style={{ fontSize: '14px', color: '#181818' }}>包含思考过程 (thinking)</span>
             </label>
-            <label className="flex cursor-pointer items-center gap-3">
+            <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
               <input
                 type="checkbox"
                 checked={options.includeToolCalls}
                 onChange={() => updateOption('includeToolCalls', !options.includeToolCalls)}
-                className="accent-primary h-4 w-4 cursor-pointer"
+                style={{ width: '16px', height: '16px', accentColor: '#CC785C', cursor: 'pointer' }}
               />
-              <span className="text-foreground text-sm">包含工具调用 (tool calls)</span>
+              <span style={{ fontSize: '14px', color: '#181818' }}>包含工具调用 (tool calls)</span>
             </label>
-            <label className="flex cursor-pointer items-center gap-3">
+            <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
               <input
                 type="checkbox"
                 checked={options.textOnly}
                 onChange={() => updateOption('textOnly', !options.textOnly)}
-                className="accent-primary h-4 w-4 cursor-pointer"
+                style={{ width: '16px', height: '16px', accentColor: '#CC785C', cursor: 'pointer' }}
               />
-              <span className="text-foreground text-sm">仅文本 (省略代码块)</span>
+              <span style={{ fontSize: '14px', color: '#181818' }}>仅文本 (省略代码块)</span>
             </label>
           </div>
 
           {/* Status */}
           {status === 'exporting' && (
-            <div className="bg-secondary text-muted-foreground rounded-xl p-3 text-sm">正在导出...</div>
+            <div
+              style={{
+                marginTop: '16px',
+                padding: '12px',
+                borderRadius: '12px',
+                backgroundColor: '#f0f0f0',
+                fontSize: '14px',
+                color: '#666',
+              }}>
+              正在导出...
+            </div>
           )}
 
           {status === 'success' && (
-            <div className="flex items-center gap-2 rounded-xl bg-green-50 p-3 text-sm text-green-700">
+            <div
+              style={{
+                marginTop: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '12px',
+                borderRadius: '12px',
+                backgroundColor: '#f0fdf4',
+                fontSize: '14px',
+                color: '#15803d',
+              }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M20 6 9 17l-5-5" />
               </svg>
@@ -417,7 +484,18 @@ messages: ${data.messages.length}
           )}
 
           {status === 'error' && (
-            <div className="flex items-center gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-700">
+            <div
+              style={{
+                marginTop: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '12px',
+                borderRadius: '12px',
+                backgroundColor: '#fef2f2',
+                fontSize: '14px',
+                color: '#b91c1c',
+              }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" />
                 <path d="m15 9-6 6" />
@@ -429,14 +507,31 @@ messages: ${data.messages.length}
         </div>
 
         {/* Footer */}
-        <div className="border-border flex justify-end gap-3 border-t px-6 py-4">
+        <div
+          style={{
+            borderTop: '1px solid #D5D3CB',
+            padding: '16px 24px',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: '12px',
+          }}>
           <button
             onClick={() => handleExport('json')}
             disabled={status === 'exporting'}
-            className={cn(
-              'border-border bg-secondary text-foreground flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors',
-              status === 'exporting' ? 'cursor-not-allowed opacity-50' : 'hover:bg-secondary/80',
-            )}>
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 16px',
+              borderRadius: '12px',
+              border: '1px solid #D5D3CB',
+              backgroundColor: '#f0f0f0',
+              color: '#181818',
+              fontSize: '14px',
+              fontWeight: 500,
+              cursor: status === 'exporting' ? 'not-allowed' : 'pointer',
+              opacity: status === 'exporting' ? 0.5 : 1,
+            }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <polyline points="14 2 14 8 20 8" />
@@ -446,10 +541,20 @@ messages: ${data.messages.length}
           <button
             onClick={() => handleExport('markdown')}
             disabled={status === 'exporting'}
-            className={cn(
-              'bg-primary text-primary-foreground flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors',
-              status === 'exporting' ? 'cursor-not-allowed opacity-50' : 'hover:bg-primary/90',
-            )}>
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 16px',
+              borderRadius: '12px',
+              border: 'none',
+              backgroundColor: '#CC785C',
+              color: '#fff',
+              fontSize: '14px',
+              fontWeight: 500,
+              cursor: status === 'exporting' ? 'not-allowed' : 'pointer',
+              opacity: status === 'exporting' ? 0.5 : 1,
+            }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
               <polyline points="7 10 12 15 17 10" />

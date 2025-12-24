@@ -17,9 +17,29 @@ export const watchOption = IS_DEV
     }
   : undefined;
 
+// 在 lovinsp 初始化之前，强制移除第三方页面可能存在的 lovinsp-component
+// 这确保我们的 lovinsp 总是能正确初始化，而不会被页面现有的组件阻止
+const lovinspCleanupCode = `
+(function() {
+  if (typeof document !== 'undefined') {
+    var existing = document.documentElement.querySelector('lovinsp-component');
+    if (existing) {
+      existing.remove();
+      console.log('[Lovsider] Removed existing lovinsp-component to ensure our inspector initializes');
+    }
+    if (typeof globalThis !== 'undefined' && globalThis.__lovinsp_console) {
+      delete globalThis.__lovinsp_console;
+    }
+  }
+})();
+`;
+
 const inspectorPrelude = [
+  lovinspCleanupCode,
   "var __lovinspCustomElements = typeof globalThis !== 'undefined' ? globalThis.customElements : (typeof window !== 'undefined' ? window.customElements : null);",
   'var customElements = __lovinspCustomElements || { get: function () { return undefined; }, define: function () {} };',
+  // lovinsp 运行时代码使用 CommonJS 风格的 exports，在 IIFE bundle 中需要手动定义
+  'var exports = {};',
 ].join('\n');
 
 const lovinspCustomElementsGuard = () => ({
