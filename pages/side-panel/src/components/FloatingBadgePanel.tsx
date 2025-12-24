@@ -36,8 +36,9 @@ export const FloatingBadgePanel = ({ onClose }: { onClose: () => void }) => {
     const loadSettings = async () => {
       try {
         const data = await floatingBadgeStorage.getSettings();
-        setEnabled(data.enabled);
-        setConfig(data.config);
+        setEnabled(data.enabled ?? true);
+        // 合并默认配置，防止旧数据缺少字段
+        setConfig(prev => ({ ...prev, ...data.config }));
         setBlacklist(data.blacklist || []);
         setWhitelist(data.whitelist || []);
         setUseWhitelist(data.useWhitelist || false);
@@ -59,8 +60,11 @@ export const FloatingBadgePanel = ({ onClose }: { onClose: () => void }) => {
       if (areaName === 'local' && changes['floating-badge-storage-key']) {
         const newData = changes['floating-badge-storage-key'].newValue;
         if (newData) {
-          setEnabled(newData.enabled);
-          setConfig(newData.config);
+          setEnabled(newData.enabled ?? true);
+          // 合并默认配置，防止旧数据缺少字段
+          if (newData.config) {
+            setConfig(prev => ({ ...prev, ...newData.config }));
+          }
           setBlacklist(newData.blacklist || []);
           setWhitelist(newData.whitelist || []);
           setUseWhitelist(newData.useWhitelist || false);

@@ -58,12 +58,14 @@ export const makeEntryPointPlugin = (): PluginOption => ({
         case 'chunk': {
           safeWriteFileSync(resolve(outputDir, newFileName), module.code);
           const newFileNameBase = basename(newFileName);
+          const contentDirectory = extractContentDir(outputDir);
 
           if (IS_FIREFOX) {
-            const contentDirectory = extractContentDir(outputDir);
-            module.code = `import(browser.runtime.getURL("${contentDirectory}/${newFileNameBase}"));`;
+            module.code = `import(browser.runtime.getURL("${contentDirectory.join('/')}/${newFileNameBase}"));`;
           } else {
-            module.code = `import('./${newFileNameBase}');`;
+            // Chrome content scripts 需要使用 chrome.runtime.getURL 来获取正确的资源路径
+            // 相对路径 './' 在 content script 中会相对于页面 URL 解析，导致加载失败
+            module.code = `import(chrome.runtime.getURL("${contentDirectory.join('/')}/${newFileNameBase}"));`;
           }
           break;
         }

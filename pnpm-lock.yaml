@@ -114,6 +114,9 @@ importers:
       lint-staged:
         specifier: ^16.0.0
         version: 16.0.0
+      lovinsp:
+        specifier: ^1.5.0
+        version: 1.5.0
       postcss:
         specifier: ^8.5.3
         version: 8.5.3
@@ -356,6 +359,9 @@ importers:
       '@extension/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
+      '@lovinsp/core':
+        specifier: ^1.5.0
+        version: 1.5.0
       '@vitejs/plugin-react-swc':
         specifier: ^3.9.0
         version: 3.9.0(vite@6.3.5(@types/node@22.15.21)(jiti@2.4.2)(sass@1.89.0)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.0))
@@ -427,6 +433,9 @@ importers:
       '@extension/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@extension/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
       '@extension/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -1186,6 +1195,24 @@ packages:
     resolution: {integrity: sha512-rmiy9yreGSrzU5HEMGX1gbQ9nA03I/3YaOpmwB1dOMEYT44ijyN6QD0VJ8bUNC2BA/fd1pYCkkgr2eFlvo0G2Q==}
     peerDependencies:
       vite: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0
+
+  '@lovinsp/core@1.5.0':
+    resolution: {integrity: sha512-mxNR5eiXsc9M2FzoYlQ970sCmlN4VvonJCu4maoWXchMrrDBRND3kmdFtE8JUP14shfeN/G5Y3QtdnWH04ZXVA==}
+
+  '@lovinsp/esbuild@1.5.0':
+    resolution: {integrity: sha512-5Zzbuyjh+AkBNHBW79ofIvR6GFXweHSDnFFhi8AwSfalmNndJXU/vZQyhbN2bbj6fcnI9/2UTXTSjUun0HnD3w==}
+
+  '@lovinsp/mako@1.5.0':
+    resolution: {integrity: sha512-Gm3Nu/oiemVDbAdKb/Jdh9x6BdZiHUf5queHMiafzbmoRo07a27TQBuHWefVR4RMWCO/LJT3eB6HbVC7yn4lRw==}
+
+  '@lovinsp/turbopack@1.5.0':
+    resolution: {integrity: sha512-0R00NgriHpHEa3/z7y8uvcShKD/zTwvMm7swYwPoyD/Iq/JQo0oRPxx6boADFw5MCskmcn4jEeugFbsePyCnfg==}
+
+  '@lovinsp/vite@1.5.0':
+    resolution: {integrity: sha512-P3w5n6H9IP1/FmIVsqN/gzcg1c2id8rA3h1V8YyM8xEVvsZa9AIT5iuo4lSzKDxGGNkXz/l+m841aD+Z6UPtMA==}
+
+  '@lovinsp/webpack@1.5.0':
+    resolution: {integrity: sha512-OB7xFQ6QTGezNWYKYzkP4yCephMEyZrYJD4EScgGRFUroQGlwjefNx5rKEzvh091jFQfjZoh3TXuql9k/is4IA==}
 
   '@manypkg/find-root@1.1.0':
     resolution: {integrity: sha512-mki5uBvhHzO8kYYix/WRy2WX8S3B5wdVSc9D6KcU5lQNglP2yt58/VfLuAK49glRXChosY8ap2oJ1qgma3GUVA==}
@@ -3850,6 +3877,9 @@ packages:
     resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
     hasBin: true
 
+  lovinsp@1.5.0:
+    resolution: {integrity: sha512-y0jaxO+jVt/XNj0NsRhJwnFzIX4F6n0MlJ91FLeBcJT2li4xzVR+jUq0awJ2Z+5YsjKy3J5hwry7tDgJKmC01Q==}
+
   lru-cache@10.4.3:
     resolution: {integrity: sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ==}
 
@@ -6118,6 +6148,48 @@ snapshots:
       mrmime: 1.0.1
       semver: 7.7.2
       vite: 6.3.5(@types/node@22.15.21)(jiti@2.4.2)(sass@1.89.0)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.0)
+
+  '@lovinsp/core@1.5.0':
+    dependencies:
+      '@vue/compiler-dom': 3.5.25
+      chalk: 4.1.2
+      dotenv: 16.5.0
+      launch-ide: 1.2.0
+      portfinder: 1.0.38
+    transitivePeerDependencies:
+      - supports-color
+
+  '@lovinsp/esbuild@1.5.0':
+    dependencies:
+      '@lovinsp/core': 1.5.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@lovinsp/mako@1.5.0':
+    dependencies:
+      '@lovinsp/core': 1.5.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@lovinsp/turbopack@1.5.0':
+    dependencies:
+      '@lovinsp/core': 1.5.0
+      '@lovinsp/webpack': 1.5.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@lovinsp/vite@1.5.0':
+    dependencies:
+      '@lovinsp/core': 1.5.0
+      chalk: 4.1.1
+    transitivePeerDependencies:
+      - supports-color
+
+  '@lovinsp/webpack@1.5.0':
+    dependencies:
+      '@lovinsp/core': 1.5.0
+    transitivePeerDependencies:
+      - supports-color
 
   '@manypkg/find-root@1.1.0':
     dependencies:
@@ -9118,6 +9190,18 @@ snapshots:
   loose-envify@1.4.0:
     dependencies:
       js-tokens: 4.0.0
+
+  lovinsp@1.5.0:
+    dependencies:
+      '@lovinsp/core': 1.5.0
+      '@lovinsp/esbuild': 1.5.0
+      '@lovinsp/mako': 1.5.0
+      '@lovinsp/turbopack': 1.5.0
+      '@lovinsp/vite': 1.5.0
+      '@lovinsp/webpack': 1.5.0
+      chalk: 4.1.1
+    transitivePeerDependencies:
+      - supports-color
 
   lru-cache@10.4.3: {}
 

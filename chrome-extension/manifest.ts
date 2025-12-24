@@ -65,6 +65,10 @@ const manifest = {
       js: ['content/all.iife.js'],
       css: ['content.css'],
     },
+    {
+      matches: ['https://claude.ai/*', 'https://aistudio.google.com/*'],
+      js: ['content-ui/all.iife.js'],
+    },
   ],
   web_accessible_resources: [
     {

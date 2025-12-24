@@ -2,6 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Shadow DOM 支持 - 必须在 @layer 外部定义 */
+:host {
+  --background: 48 14% 97%;
+  --foreground: 0 0% 9%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 9%;
+  --primary: 16 60% 60%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 45 17% 91%;
+  --secondary-foreground: 0 0% 9%;
+  --muted: 43 24% 95%;
+  --muted-foreground: 56 4% 51%;
+  --accent: 45 17% 91%;
+  --accent-foreground: 0 0% 9%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 56 4% 51%;
+  --input: 45 10% 89%;
+  --ring: 16 60% 60%;
+  --radius: 0.75rem;
+}
+
 /* Lovsider Design Theme - Warm Academic Style */
 /* shadcn 语义化颜色变量 */
 @layer base {
