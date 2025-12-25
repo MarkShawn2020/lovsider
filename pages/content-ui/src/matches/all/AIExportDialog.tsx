@@ -1,4 +1,4 @@
-import { claudeExportStorage, downloadSettingsStorage } from '@extension/storage';
+import { claudeExportStorage } from '@extension/storage';
 import { useState, useEffect, useCallback } from 'react';
 import type { ClaudeExportOptions } from '@extension/storage';
 
@@ -284,22 +284,17 @@ messages: ${data.messages.length}
   // 清理文件名
   const sanitizeFilename = (name: string): string => name.replace(/[/\\:*?"<>|]/g, '-').slice(0, 100);
 
-  // 下载文件
+  // 下载文件（使用 DOM 方式，因为 chrome.downloads 在 content script 中不可用）
   const downloadFile = async (filename: string, content: string, mimeType: string) => {
-    const settings = await downloadSettingsStorage.getSettings();
-    const dataUrl = `data:${mimeType};charset=utf-8,${encodeURIComponent(content)}`;
-
-    const downloadOptions: chrome.downloads.DownloadOptions = {
-      url: dataUrl,
-      filename: filename,
-      saveAs: true,
-    };
-
-    if (settings.lastUsedPath) {
-      downloadOptions.filename = `${settings.lastUsedPath}/${filename}`;
-    }
-
-    await chrome.downloads.download(downloadOptions);
+    const blob = new Blob([content], { type: `${mimeType};charset=utf-8` });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   // 导出处理
