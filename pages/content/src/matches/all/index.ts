@@ -899,17 +899,45 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
 
     console.log('[Lovsider] Cmd+E 打开导出弹窗');
 
-    // 如果没有选择过内容，使用当前网页信息生成默认数据
-    const data = lastMarkdownData || {
-      markdown: `---\ntitle: ${document.title}\nsource: ${window.location.href}\n---\n\n`,
-    };
+    // 如果有选择过内容，直接使用
+    if (lastMarkdownData) {
+      window.postMessage(
+        {
+          type: 'lovsider-open-markdown-export',
+          data: lastMarkdownData,
+        },
+        '*',
+      );
+      return;
+    }
 
-    window.postMessage(
-      {
-        type: 'lovsider-open-markdown-export',
-        data,
-      },
-      '*',
-    );
+    // 否则尝试读取剪贴板内容作为默认正文
+    navigator.clipboard
+      .readText()
+      .then(clipboardText => {
+        const data = {
+          markdown: `---\ntitle: ${document.title}\nsource: ${window.location.href}\n---\n\n${clipboardText || ''}`,
+        };
+        window.postMessage(
+          {
+            type: 'lovsider-open-markdown-export',
+            data,
+          },
+          '*',
+        );
+      })
+      .catch(() => {
+        // 剪贴板读取失败时使用空内容
+        const data = {
+          markdown: `---\ntitle: ${document.title}\nsource: ${window.location.href}\n---\n\n`,
+        };
+        window.postMessage(
+          {
+            type: 'lovsider-open-markdown-export',
+            data,
+          },
+          '*',
+        );
+      });
   }
 });
