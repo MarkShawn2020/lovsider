@@ -47,35 +47,18 @@ html, body {
   background: rgba(75, 85, 99, 0.7);
 }
 
-/* Lovsider Logo Theme Colors - Override any existing styles */
-svg path:first-child {
+/* Lovsider Logo Theme Colors - Only target logo class */
+.logo svg path:first-child {
   fill: var(--color-primary, #D97757) !important;
 }
-svg path:nth-child(2) {
+.logo svg path:nth-child(2) {
   fill: var(--color-background-clay, #CC785C) !important;
 }
-svg path:nth-child(3) {
+.logo svg path:nth-child(3) {
   fill: var(--color-swatch-cactus, #629A90) !important;
 }
 
 /* Ensure all img elements with logo in name get proper styling */
 img[src*="logo"] {
   filter: none !important;
-}
-
-/* Force logo colors on any SVG in navigation or header areas */
-nav svg path:first-child,
-header svg path:first-child,
-.logo svg path:first-child {
-  fill: var(--color-primary, #D97757) !important;
-}
-nav svg path:nth-child(2),
-header svg path:nth-child(2),
-.logo svg path:nth-child(2) {
-  fill: var(--color-background-clay, #CC785C) !important;
-}
-nav svg path:nth-child(3),
-header svg path:nth-child(3),
-.logo svg path:nth-child(3) {
-  fill: var(--color-swatch-cactus, #629A90) !important;
 }

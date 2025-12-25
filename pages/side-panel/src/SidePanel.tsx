@@ -1,5 +1,4 @@
 import '@src/SidePanel.css';
-import { ClaudeExportPanel } from './components/ClaudeExportPanel';
 import { FloatingBadgePanel } from './components/FloatingBadgePanel';
 import { SitePresetsPanel } from './components/SitePresetsPanel';
 import { parseAIPlatformContent } from './utils/ai-platform-parser';
@@ -184,6 +183,7 @@ const SimpleCaptureModule = () => {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [exportAction, setExportAction] = useState<'download' | 'copy'>('download');
   const [presetMatch, setPresetMatch] = useState<PresetMatchInfo | null>(null);
+  const [activeAction, setActiveAction] = useState<'smart' | 'manual' | 'paste' | null>(null);
 
   // 初始化和URL监听
   useEffect(() => {
@@ -366,6 +366,7 @@ const SimpleCaptureModule = () => {
 
   const startSelection = async () => {
     try {
+      setActiveAction('manual');
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       await chrome.tabs.sendMessage(tab.id!, { action: 'startSelection' });
       setIsSelecting(true);
@@ -386,6 +387,7 @@ const SimpleCaptureModule = () => {
 
   const smartSelect = async () => {
     try {
+      setActiveAction('smart');
       // 先尝试 AI 平台解析（API 模式）
       const aiResult = await parseAIPlatformContent();
       if (aiResult) {
@@ -484,6 +486,7 @@ datetime: ${datetime}
 
   const pasteFromClipboard = async () => {
     try {
+      setActiveAction('paste');
       const text = await navigator.clipboard.readText();
       if (!text) return;
 
@@ -797,40 +800,56 @@ datetime: ${datetime}
         </button>
       </div>
 
-      {/* Claude 导出面板 */}
-      <div className="mb-4">
-        <ClaudeExportPanel />
-      </div>
-
       {/* 操作按钮区域 */}
       <div className="mb-4 space-y-3">
         {/* 主按钮组 - 单行响应式 */}
         <div className="flex gap-2">
           <button
             onClick={smartSelect}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-sm font-medium">
-            <MagicWandIcon className="h-4 w-4 shrink-0" />
+            className={cn(
+              'flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-sm font-medium transition-colors',
+              activeAction === 'smart'
+                ? 'bg-primary text-primary-foreground ring-primary/30 ring-offset-background ring-2 ring-offset-1'
+                : 'border-border bg-card text-card-foreground hover:bg-accent border',
+            )}>
+            <MagicWandIcon
+              className={cn('h-4 w-4 shrink-0', activeAction === 'smart' ? 'text-white' : 'text-current')}
+            />
             <span className="truncate">智能选择</span>
           </button>
           {!isSelecting ? (
             <button
               onClick={startSelection}
-              className="border-border bg-card text-card-foreground hover:bg-accent flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg border px-2 py-2.5 text-sm font-medium">
-              <TargetIcon className="h-4 w-4 shrink-0" />
+              className={cn(
+                'flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-sm font-medium transition-colors',
+                activeAction === 'manual'
+                  ? 'bg-primary text-primary-foreground ring-primary/30 ring-offset-background ring-2 ring-offset-1'
+                  : 'border-border bg-card text-card-foreground hover:bg-accent border',
+              )}>
+              <TargetIcon
+                className={cn('h-4 w-4 shrink-0', activeAction === 'manual' ? 'text-white' : 'text-current')}
+              />
               <span className="truncate">手动选择</span>
             </button>
           ) : (
             <button
               onClick={stopSelection}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-sm font-medium">
-              <StopIcon className="h-4 w-4 shrink-0" />
+              className="bg-destructive text-destructive-foreground ring-destructive/30 ring-offset-background hover:bg-destructive/90 flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-sm font-medium ring-2 ring-offset-1 transition-colors">
+              <StopIcon className="h-4 w-4 shrink-0 text-white" />
               <span className="truncate">停止选择</span>
             </button>
           )}
           <button
             onClick={pasteFromClipboard}
-            className="border-border bg-card text-card-foreground hover:bg-accent flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg border px-2 py-2.5 text-sm font-medium">
-            <ClipboardCopyIcon className="h-4 w-4 shrink-0" />
+            className={cn(
+              'flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-sm font-medium transition-colors',
+              activeAction === 'paste'
+                ? 'bg-primary text-primary-foreground ring-primary/30 ring-offset-background ring-2 ring-offset-1'
+                : 'border-border bg-card text-card-foreground hover:bg-accent border',
+            )}>
+            <ClipboardCopyIcon
+              className={cn('h-4 w-4 shrink-0', activeAction === 'paste' ? 'text-white' : 'text-current')}
+            />
             <span className="truncate">粘贴</span>
           </button>
         </div>

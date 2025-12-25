@@ -124,18 +124,7 @@
   }
 }
 
-/* Logo Styling */
-svg path:nth-child(1) {
-  fill: var(--color-primary) !important;
-}
-svg path:nth-child(2) {
-  fill: var(--color-background-clay) !important;
-}
-svg path:nth-child(3) {
-  fill: var(--color-swatch-cactus) !important;
-}
-
-/* Ensure logo colors work in different contexts */
+/* Logo Styling - Only target elements with logo class */
 .logo svg path:nth-child(1),
 [class*="logo"] svg path:nth-child(1) {
   fill: var(--color-primary) !important;
