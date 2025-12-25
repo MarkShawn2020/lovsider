@@ -429,6 +429,28 @@ const SimpleCaptureModule = () => {
     }
   };
 
+  // 打开导出弹窗（在网页主体上显示）
+  const openExportDialog = async () => {
+    if (!markdownOutput) return;
+
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      console.log('[Lovsider] 当前标签页:', tab);
+      if (tab.id) {
+        const response = await chrome.tabs.sendMessage(tab.id, {
+          action: 'openMarkdownExport',
+          data: {
+            markdown: markdownOutput,
+            presetName: presetMatch?.presetName,
+          },
+        });
+        console.log('[Lovsider] sendMessage 响应:', response);
+      }
+    } catch (error) {
+      console.error('打开导出弹窗失败:', error);
+    }
+  };
+
   const hasFrontmatter = (text: string): boolean => /^---\n[\s\S]*?\n---/.test(text);
 
   const parseFrontmatter = (text: string): { frontmatter: Record<string, string>; content: string } => {
@@ -929,96 +951,42 @@ datetime: ${datetime}
       <div className="min-h-0 flex-1 overflow-hidden">
         {markdownOutput ? (
           <div className="border-border bg-card flex h-full flex-col rounded-xl border">
-            {/* 标题栏 */}
-            <div className="border-border flex items-center justify-between border-b px-4 py-3">
-              <div className="flex items-center gap-2">
-                <h3 className="text-card-foreground text-sm font-medium">Markdown 内容</h3>
+            {/* 预览卡片 */}
+            <div className="flex flex-1 flex-col p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <FileTextIcon className="text-primary h-5 w-5" />
+                <h3 className="text-card-foreground font-medium">{parsedMarkdown.frontmatter.title || '已捕获内容'}</h3>
                 {presetMatch?.presetName && (
                   <span className="bg-primary/10 text-primary rounded px-2 py-0.5 text-xs">
                     {presetMatch.presetName}
                   </span>
                 )}
               </div>
-              {/* Split Button */}
-              <div className="relative">
-                <div className="flex">
-                  <button
-                    onClick={exportAction === 'download' ? downloadMarkdown : copyToClipboard}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-1.5 rounded-l-lg px-3 py-1.5 text-sm font-medium">
-                    {exportAction === 'download' ? (
-                      <DownloadIcon className="h-4 w-4" />
-                    ) : markdownCopied ? (
-                      <CheckIcon className="h-4 w-4" />
-                    ) : (
-                      <ClipboardCopyIcon className="h-4 w-4" />
-                    )}
-                    <span>{exportAction === 'download' ? '下载' : markdownCopied ? '已复制' : '复制'}</span>
-                  </button>
-                  <button
-                    onClick={() => setShowExportMenu(!showExportMenu)}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 border-primary-foreground/20 rounded-r-lg border-l px-2 py-1.5">
-                    <ChevronDownIcon className={cn('h-4 w-4 transition-transform', showExportMenu && 'rotate-180')} />
-                  </button>
-                </div>
-                {showExportMenu && (
-                  <div className="border-border bg-card absolute right-0 top-full z-10 mt-1 min-w-[120px] rounded-lg border py-1 shadow-lg">
-                    <button
-                      onClick={() => {
-                        setExportAction('download');
-                        setShowExportMenu(false);
-                      }}
-                      className={cn(
-                        'flex w-full items-center gap-2 px-3 py-2 text-sm',
-                        exportAction === 'download' ? 'bg-muted text-foreground' : 'text-foreground hover:bg-muted',
-                      )}>
-                      <DownloadIcon className="h-4 w-4" />
-                      <span>下载</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setExportAction('copy');
-                        setShowExportMenu(false);
-                      }}
-                      className={cn(
-                        'flex w-full items-center gap-2 px-3 py-2 text-sm',
-                        exportAction === 'copy' ? 'bg-muted text-foreground' : 'text-foreground hover:bg-muted',
-                      )}>
-                      <ClipboardCopyIcon className="h-4 w-4" />
-                      <span>复制</span>
-                    </button>
-                  </div>
-                )}
+              {/* 内容预览 */}
+              <div className="bg-muted text-muted-foreground mb-4 flex-1 overflow-hidden rounded-lg p-3">
+                <p className="line-clamp-6 text-xs">{parsedMarkdown.content.slice(0, 300)}...</p>
               </div>
-            </div>
-
-            {/* Frontmatter 表单 */}
-            <div className="flex flex-1 flex-col overflow-hidden">
-              <div className="border-border space-y-2 border-b p-3">
-                <div className="flex items-center gap-2">
-                  <label className="text-muted-foreground w-16 shrink-0 text-xs">标题</label>
-                  <input
-                    type="text"
-                    value={parsedMarkdown.frontmatter.title || ''}
-                    onChange={e => updateFrontmatterField('title', e.target.value)}
-                    className="border-input bg-background text-foreground flex-1 rounded border px-2 py-1 text-xs focus:outline-none"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-muted-foreground w-16 shrink-0 text-xs">来源</label>
-                  <input
-                    type="text"
-                    value={parsedMarkdown.frontmatter.source || ''}
-                    onChange={e => updateFrontmatterField('source', e.target.value)}
-                    className="border-input bg-background text-foreground flex-1 rounded border px-2 py-1 text-xs focus:outline-none"
-                  />
-                </div>
+              {/* 操作按钮 */}
+              <div className="flex gap-2">
+                <button
+                  onClick={openExportDialog}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium">
+                  <Pencil2Icon className="h-4 w-4" />
+                  编辑导出
+                </button>
+                <button
+                  onClick={exportAction === 'download' ? downloadMarkdown : copyToClipboard}
+                  className="bg-secondary text-foreground hover:bg-secondary/80 flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm">
+                  {exportAction === 'download' ? (
+                    <DownloadIcon className="h-4 w-4" />
+                  ) : markdownCopied ? (
+                    <CheckIcon className="h-4 w-4" />
+                  ) : (
+                    <ClipboardCopyIcon className="h-4 w-4" />
+                  )}
+                  {exportAction === 'download' ? '下载' : markdownCopied ? '已复制' : '复制'}
+                </button>
               </div>
-              {/* 正文编辑 */}
-              <textarea
-                value={parsedMarkdown.content}
-                onChange={e => updateContent(e.target.value)}
-                className="bg-muted text-foreground flex-1 resize-none overflow-auto p-4 font-mono text-xs focus:outline-none"
-              />
             </div>
           </div>
         ) : (

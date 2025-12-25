@@ -72,7 +72,7 @@ const manifest = {
       run_at: 'document_start',
     },
     {
-      matches: ['https://claude.ai/*', 'https://aistudio.google.com/*'],
+      matches: ['http://*/*', 'https://*/*'],
       js: ['content-ui/all.iife.js'],
     },
   ],

@@ -86,10 +86,19 @@ const BUILT_IN_PRESETS: SitePreset[] = [
   },
 ];
 
+// 存储最后选择的 markdown 数据，用于快捷键导出
+let lastMarkdownData: { markdown: string; presetName?: string } | null = null;
+
 class LovsiderElementSelector extends ElementSelector {
   protected onElementSelected(): void {
     const data = this.getSelectedElementData();
     if (data) {
+      // 存储数据用于快捷键导出
+      lastMarkdownData = {
+        markdown: data.markdown,
+        presetName: data.presetMatch?.presetName,
+      };
+
       // 发送数据到侧边栏
       safeSendMessage({
         action: 'elementSelected',
@@ -110,6 +119,12 @@ class LovsiderElementSelector extends ElementSelector {
   protected onElementDataUpdate(): void {
     const data = this.getSelectedElementData();
     if (data) {
+      // 更新存储的数据
+      lastMarkdownData = {
+        markdown: data.markdown,
+        presetName: data.presetMatch?.presetName,
+      };
+
       // 实时更新侧边栏中的数据
       safeSendMessage({
         action: 'elementDataUpdate',
@@ -725,6 +740,18 @@ chrome.runtime?.onMessage?.addListener(
         });
 
       return true; // 保持消息通道开放
+    } else if (msg.action === 'openMarkdownExport') {
+      // 打开 Markdown 导出弹窗
+      console.log('[Lovsider] 收到 openMarkdownExport 消息', msg.data);
+      window.postMessage(
+        {
+          type: 'lovsider-open-markdown-export',
+          data: msg.data,
+        },
+        '*',
+      );
+      console.log('[Lovsider] 已发送 postMessage');
+      sendResponse({ success: true });
     }
 
     return false;
@@ -853,3 +880,36 @@ if (document.readyState === 'loading') {
     initializeAIExportBadge();
   }, 500);
 }
+
+// 监听 Cmd+E / Ctrl+E 快捷键打开导出弹窗
+document.addEventListener('keydown', (e: KeyboardEvent) => {
+  // Cmd+E (Mac) 或 Ctrl+E (Windows/Linux)
+  if ((e.metaKey || e.ctrlKey) && e.key === 'e') {
+    // 检查是否在输入框中
+    const activeEl = document.activeElement;
+    if (
+      activeEl instanceof HTMLInputElement ||
+      activeEl instanceof HTMLTextAreaElement ||
+      (activeEl instanceof HTMLElement && activeEl.isContentEditable)
+    ) {
+      return; // 不阻止输入框中的快捷键
+    }
+
+    e.preventDefault();
+
+    console.log('[Lovsider] Cmd+E 打开导出弹窗');
+
+    // 如果没有选择过内容，使用当前网页信息生成默认数据
+    const data = lastMarkdownData || {
+      markdown: `---\ntitle: ${document.title}\nsource: ${window.location.href}\n---\n\n`,
+    };
+
+    window.postMessage(
+      {
+        type: 'lovsider-open-markdown-export',
+        data,
+      },
+      '*',
+    );
+  }
+});
