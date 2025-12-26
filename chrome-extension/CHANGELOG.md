@@ -2,10 +2,28 @@
 
 ## 0.1.0
 
-### Minor Changes
+### AI Chat Export - Perfect Conversation Backup
 
-- 重置版本号至 v0.1.0，开始新的版本管理周期
-- 包含所有之前版本的功能
+Export conversations from **Claude.ai** and **Google AI Studio** with full fidelity.
+
+- **Backend API-based** - Fetches complete conversation data directly from API
+- **Thinking Process Control** - Toggle to include/exclude AI's thinking blocks
+- **Multiple Formats** - Export as Markdown or JSON
+- **One-click Actions** - Copy to clipboard or download as file
+
+### Supported Platforms
+
+| Platform | Export | Thinking |
+|----------|--------|----------|
+| Claude.ai | ✅ | ✅ |
+| Google AI Studio | ✅ | ✅ |
+
+### Other Features
+
+- Page capture with smart/manual selection
+- Markdown conversion
+- Form auto-fill
+- Floating badge with quick actions
 
 ## 1.2.1
 

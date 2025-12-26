@@ -8,7 +8,7 @@
 </h1>
 
 <p align="center">
-  <strong>Multi-functional browser sidebar toolkit for web capture and productivity</strong><br>
+  <strong>AI Chat Export & Web Capture Toolkit</strong><br>
   <sub>Chrome Extension · Firefox Add-on</sub>
 </p>
 
@@ -18,6 +18,23 @@
   <img src="https://img.shields.io/badge/Chrome-MV3-4285F4?logo=googlechrome" alt="Chrome Extension">
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
 </p>
+
+---
+
+## Highlights
+
+### AI Chat Export
+
+Export conversations from **Claude.ai** and **Google AI Studio** with full fidelity.
+
+<p align="center">
+  <img src="docs/images/ai-export.png" alt="AI Chat Export" width="600">
+</p>
+
+- **Backend API-based** - Fetches complete conversation data, not DOM scraping
+- **Thinking Process** - Toggle to include/exclude AI's thinking blocks
+- **Multiple Formats** - Export as Markdown or JSON
+- **One-click Download** - Copy to clipboard or download as file
 
 ---
 
