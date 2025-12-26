@@ -1,5 +1,14 @@
 # chrome-extension
 
+## 1.3.1
+
+### Patch Changes
+
+- fix: change export shortcut from Cmd+E to Shift+Cmd+P
+  - @extension/env@1.3.1
+  - @extension/shared@1.3.1
+  - @extension/storage@1.3.1
+
 ## 1.3.0
 
 ### Minor Changes

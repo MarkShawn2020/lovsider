@@ -1,5 +1,14 @@
 # @extension/sidepanel
 
+## 1.3.1
+
+### Patch Changes
+
+- @extension/i18n@1.3.1
+- @extension/shared@1.3.1
+- @extension/storage@1.3.1
+- @extension/ui@1.3.1
+
 ## 1.3.0
 
 ### Patch Changes

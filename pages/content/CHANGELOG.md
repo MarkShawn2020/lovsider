@@ -1,5 +1,13 @@
 # @extension/content-script
 
+## 1.3.1
+
+### Patch Changes
+
+- @extension/env@1.3.1
+- @extension/shared@1.3.1
+- @extension/storage@1.3.1
+
 ## 1.3.0
 
 ### Patch Changes
