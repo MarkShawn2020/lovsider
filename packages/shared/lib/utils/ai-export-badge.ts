@@ -134,11 +134,12 @@ export class AIExportBadge {
   }
 
   private openExportDialog(): void {
-    // 发送消息给 content-ui 打开导出对话框
+    // 发送消息给 content-ui 打开统一导出对话框
     window.postMessage(
       {
-        type: 'lovsider-open-export-dialog',
+        type: 'lovsider-open-unified-export',
         platformInfo: this.platformInfo,
+        markdownData: null,
       },
       '*',
     );

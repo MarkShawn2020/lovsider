@@ -741,12 +741,14 @@ chrome.runtime?.onMessage?.addListener(
 
       return true; // 保持消息通道开放
     } else if (msg.action === 'openMarkdownExport') {
-      // 打开 Markdown 导出弹窗
+      // 打开统一导出弹窗（剪贴板模式）
       console.log('[Lovsider] 收到 openMarkdownExport 消息', msg.data);
+      const platformInfo = AIExportBadge.detectPlatform();
       window.postMessage(
         {
-          type: 'lovsider-open-markdown-export',
-          data: msg.data,
+          type: 'lovsider-open-unified-export',
+          platformInfo,
+          markdownData: msg.data,
         },
         '*',
       );
@@ -897,17 +899,26 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
 
     e.preventDefault();
 
-    console.log('[Lovsider] Cmd+E 打开导出弹窗');
+    console.log('[Lovsider] Cmd+E 打开统一导出弹窗');
 
-    // 如果有选择过内容，直接使用
-    if (lastMarkdownData) {
+    // 检测是否在 AI 平台
+    const platformInfo = AIExportBadge.detectPlatform();
+
+    // 发送统一导出消息的辅助函数
+    const sendUnifiedExportMessage = (markdownData: { markdown: string; presetName?: string } | null) => {
       window.postMessage(
         {
-          type: 'lovsider-open-markdown-export',
-          data: lastMarkdownData,
+          type: 'lovsider-open-unified-export',
+          platformInfo,
+          markdownData,
         },
         '*',
       );
+    };
+
+    // 如果有选择过内容，直接使用
+    if (lastMarkdownData) {
+      sendUnifiedExportMessage(lastMarkdownData);
       return;
     }
 
@@ -918,26 +929,14 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
         const data = {
           markdown: `---\ntitle: ${document.title}\nsource: ${window.location.href}\n---\n\n${clipboardText || ''}`,
         };
-        window.postMessage(
-          {
-            type: 'lovsider-open-markdown-export',
-            data,
-          },
-          '*',
-        );
+        sendUnifiedExportMessage(data);
       })
       .catch(() => {
         // 剪贴板读取失败时使用空内容
         const data = {
           markdown: `---\ntitle: ${document.title}\nsource: ${window.location.href}\n---\n\n`,
         };
-        window.postMessage(
-          {
-            type: 'lovsider-open-markdown-export',
-            data,
-          },
-          '*',
-        );
+        sendUnifiedExportMessage(data);
       });
   }
 });

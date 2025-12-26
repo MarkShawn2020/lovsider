@@ -1,11 +1,5 @@
-import { AIExportDialog } from './AIExportDialog';
-import { MarkdownExportDialog } from './MarkdownExportDialog';
+import { UnifiedExportDialog } from './UnifiedExportDialog';
 
 export default function App() {
-  return (
-    <>
-      <AIExportDialog />
-      <MarkdownExportDialog />
-    </>
-  );
+  return <UnifiedExportDialog />;
 }
