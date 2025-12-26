@@ -1,6 +1,8 @@
-import { claudeExportStorage } from '@extension/storage';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { claudeExportStorage, exportLayoutStorage } from '@extension/storage';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import type { ClaudeExportOptions } from '@extension/storage';
+import { Switch } from '../../components/Switch';
+import { useStorage } from '@extension/shared';
 
 // 平台信息
 interface PlatformInfo {
@@ -45,6 +47,112 @@ type TabType = 'ai' | 'clipboard';
 const PLATFORM_NAMES: Record<string, string> = {
   claude: 'Claude',
   'google-ai-studio': 'Google AI Studio',
+};
+
+// 可折叠 JSON 查看器组件
+interface JsonNodeProps {
+  data: unknown;
+  depth?: number;
+  label?: React.ReactNode; // 行前缀（索引或键名）
+}
+
+const JsonNode = ({ data, depth = 0, label }: JsonNodeProps) => {
+  const [collapsed, setCollapsed] = useState(depth > 1);
+  const [hovered, setHovered] = useState(false);
+  const indent = depth * 16;
+
+  const isCollapsible = (Array.isArray(data) && data.length > 0) || (typeof data === 'object' && data !== null && Object.keys(data).length > 0);
+
+  const rowStyle = {
+    cursor: isCollapsible ? 'pointer' : 'default',
+    userSelect: 'none' as const,
+    display: 'inline-block',
+    width: '100%',
+    borderRadius: '3px',
+    margin: '-1px -4px',
+    padding: '1px 4px',
+    backgroundColor: hovered ? 'rgba(0,0,0,0.05)' : 'transparent',
+  };
+
+  const rowProps = {
+    style: rowStyle,
+    onMouseEnter: () => setHovered(true),
+    onMouseLeave: () => setHovered(false),
+  };
+
+  // 原始类型
+  if (data === null) return <div {...rowProps}>{label}<span style={{ color: '#666' }}>null</span></div>;
+  if (typeof data === 'boolean') return <div {...rowProps}>{label}<span style={{ color: '#0550ae' }}>{String(data)}</span></div>;
+  if (typeof data === 'number') return <div {...rowProps}>{label}<span style={{ color: '#0550ae' }}>{data}</span></div>;
+  if (typeof data === 'string') {
+    const truncated = data.length > 100 ? data.slice(0, 100) + '...' : data;
+    return (
+      <div {...rowProps}>
+        {label}
+        <span style={{ color: '#0a3069' }} title={data.length > 100 ? data : undefined}>
+          "{truncated}"
+        </span>
+      </div>
+    );
+  }
+
+  // 数组
+  if (Array.isArray(data)) {
+    if (data.length === 0) return <div {...rowProps}>{label}<span style={{ color: '#666' }}>[]</span></div>;
+    return (
+      <span>
+        <div {...rowProps} onClick={() => setCollapsed(!collapsed)}>
+          {label}
+          <span style={{ color: '#666', marginRight: '4px', fontSize: '10px' }}>{collapsed ? '▶' : '▼'}</span>
+          <span style={{ color: '#666' }}>[{data.length}]</span>
+        </div>
+        {!collapsed && (
+          <div style={{ marginLeft: `${indent + 16}px` }}>
+            {data.map((item, i) => (
+              <div key={i}>
+                <JsonNode data={item} depth={depth + 1} label={<span style={{ color: '#666' }}>{i}: </span>} />
+              </div>
+            ))}
+          </div>
+        )}
+      </span>
+    );
+  }
+
+  // 对象
+  if (typeof data === 'object') {
+    const keys = Object.keys(data as Record<string, unknown>);
+    if (keys.length === 0) return <div {...rowProps}>{label}<span style={{ color: '#666' }}>{'{}'}</span></div>;
+    return (
+      <span>
+        <div {...rowProps} onClick={() => setCollapsed(!collapsed)}>
+          {label}
+          <span style={{ color: '#666', marginRight: '4px', fontSize: '10px' }}>{collapsed ? '▶' : '▼'}</span>
+          <span style={{ color: '#666' }}>{'{'}{keys.length}{'}'}</span>
+        </div>
+        {!collapsed && (
+          <div style={{ marginLeft: `${indent + 16}px` }}>
+            {keys.map(key => (
+              <div key={key}>
+                <JsonNode
+                  data={(data as Record<string, unknown>)[key]}
+                  depth={depth + 1}
+                  label={
+                    <>
+                      <span style={{ color: '#953800' }}>"{key}"</span>
+                      <span style={{ color: '#666' }}>: </span>
+                    </>
+                  }
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </span>
+    );
+  }
+
+  return <div {...rowProps}>{label}<span>{String(data)}</span></div>;
 };
 
 // 解析 frontmatter
@@ -116,6 +224,69 @@ export const UnifiedExportDialog = () => {
   const [copied, setCopied] = useState(false);
   const [downloadedFilename, setDownloadedFilename] = useState('');
   const [thinkingCache, setThinkingCache] = useState<Map<number, string>>(new Map());
+  const [showJsonViewer, setShowJsonViewer] = useState(false);
+  const [rawApiResponse, setRawApiResponse] = useState<unknown>(null); // 原始 API 响应
+  const [showMeta, setShowMeta] = useState(false);
+  const [showFetchOptions, setShowFetchOptions] = useState(false);
+  const fetchOptionsRef = useRef<HTMLDivElement>(null);
+  const { dialogSize } = useStorage(exportLayoutStorage);
+  const [isResizing, setIsResizing] = useState(false);
+  const safeDialogSize = dialogSize ?? { width: 520, height: 480 };
+  const [localSize, setLocalSize] = useState({ width: safeDialogSize.width, height: safeDialogSize.height });
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // 同步 storage 变化到 localSize
+  useEffect(() => {
+    if (!isResizing && dialogSize) {
+      setLocalSize({ width: dialogSize.width, height: dialogSize.height });
+    }
+  }, [dialogSize, isResizing]);
+
+  // 点击外部关闭下拉菜单
+  useEffect(() => {
+    if (!showFetchOptions) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (fetchOptionsRef.current && !fetchOptionsRef.current.contains(e.target as Node)) {
+        setShowFetchOptions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showFetchOptions]);
+
+  // Resize 拖拽逻辑
+  const handleResizeStart = useCallback(
+    (e: React.MouseEvent, direction: 'se' | 'e' | 's') => {
+      e.preventDefault();
+      setIsResizing(true);
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const startWidth = localSize.width;
+      const startHeight = localSize.height;
+      let finalWidth = startWidth;
+      let finalHeight = startHeight;
+
+      const handleMouseMove = (moveEvent: MouseEvent) => {
+        const deltaX = moveEvent.clientX - startX;
+        const deltaY = moveEvent.clientY - startY;
+        finalWidth = direction === 's' ? startWidth : Math.max(400, Math.min(1200, startWidth + deltaX * 2));
+        finalHeight = direction === 'e' ? startHeight : Math.max(300, Math.min(900, startHeight + deltaY * 2));
+        setLocalSize({ width: finalWidth, height: finalHeight });
+      };
+
+      const handleMouseUp = () => {
+        setIsResizing(false);
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        // 持久化
+        exportLayoutStorage.setDialogSize({ width: finalWidth, height: finalHeight });
+      };
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    },
+    [localSize],
+  );
 
   const parsed = useMemo(() => parseFrontmatter(markdown), [markdown]);
 
@@ -208,7 +379,7 @@ export const UnifiedExportDialog = () => {
   // ========== AI 数据获取 ==========
 
   // 获取聊天数据
-  const fetchChatData = useCallback(async (): Promise<UnifiedChatData | null> => {
+  const fetchChatData = useCallback(async (): Promise<{ parsed: UnifiedChatData; raw: unknown } | null> => {
     if (!platformInfo) throw new Error('未检测到 AI 平台');
 
     if (platformInfo.platform === 'claude') {
@@ -227,8 +398,8 @@ export const UnifiedExportDialog = () => {
       );
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-      return parseClaudeResponse(data, window.location.href);
+      const rawData = await response.json();
+      return { parsed: parseClaudeResponse(rawData, window.location.href), raw: rawData };
     }
 
     if (platformInfo.platform === 'google-ai-studio') {
@@ -255,8 +426,8 @@ export const UnifiedExportDialog = () => {
       );
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-      return parseGoogleAIStudioResponse(data, window.location.href);
+      const rawData = await response.json();
+      return { parsed: parseGoogleAIStudioResponse(rawData, window.location.href), raw: rawData };
     }
 
     throw new Error('不支持的平台');
@@ -307,6 +478,10 @@ export const UnifiedExportDialog = () => {
   };
 
   // 解析 Google AI Studio 响应
+  // 数据结构：
+  // - chunk[0] 是主文本，chunk[8] 是 role (user/model)
+  // - chunk[19] === 1 表示整条消息是 thinking
+  // - chunk[29] 包含子 blocks，用于流式显示
   const parseGoogleAIStudioResponse = (data: any, url: string): UnifiedChatData => {
     const root = data[0] as any[];
     const promptId = (root[0] as string) || '';
@@ -322,29 +497,50 @@ export const UnifiedExportDialog = () => {
     for (const turn of conversations) {
       if (!Array.isArray(turn)) continue;
 
-      for (const msg of turn) {
-        if (!Array.isArray(msg)) continue;
+      // 按顺序处理：遇到 user 时先输出之前的 assistant
+      let thinkingTexts: string[] = [];
+      let responseTexts: string[] = [];
 
-        const text = (msg[0] as string) || '';
-        const role = msg[8] as string;
+      const flushAssistant = () => {
+        if (thinkingTexts.length > 0 || responseTexts.length > 0) {
+          messages.push({
+            role: 'assistant',
+            text: responseTexts.join(''),
+            thinking: thinkingTexts.length > 0 ? thinkingTexts.join('\n\n') : undefined,
+          });
+          thinkingTexts = [];
+          responseTexts = [];
+        }
+      };
 
+      for (const chunk of turn) {
+        if (!Array.isArray(chunk)) continue;
+
+        const role = chunk[8] as string;
         if (!role || (role !== 'user' && role !== 'model')) continue;
 
-        const unifiedRole = role === 'user' ? 'human' : 'assistant';
+        const text = (chunk[0] as string) || '';
 
-        let thinking: string | undefined;
-        const thinkingBlocks = msg[29] as any[] | undefined;
-        if (Array.isArray(thinkingBlocks)) {
-          const thinkingTexts = thinkingBlocks.filter(b => Array.isArray(b) && b[1]).map(b => b[1] as string);
-          if (thinkingTexts.length > 0) {
-            thinking = thinkingTexts.join('\n\n');
+        if (role === 'user') {
+          // 先输出之前收集的 assistant 消息
+          flushAssistant();
+          // 添加 user 消息（跳过空消息）
+          if (text) {
+            messages.push({ role: 'human', text });
+          }
+        } else if (role === 'model') {
+          // chunk[19] === 1 表示是 thinking 消息
+          const isThinking = chunk[19] === 1;
+          if (isThinking) {
+            if (text) thinkingTexts.push(text);
+          } else {
+            if (text) responseTexts.push(text);
           }
         }
-
-        if (!text && !thinking) continue;
-
-        messages.push({ role: unifiedRole, text, thinking });
       }
+
+      // 处理最后剩余的 assistant 消息
+      flushAssistant();
     }
 
     return {
@@ -462,13 +658,14 @@ messages: ${data.messages.length}
     setFetchError('');
 
     try {
-      const data = await fetchChatData();
-      if (!data) throw new Error('无法获取聊天数据');
+      const result = await fetchChatData();
+      if (!result) throw new Error('无法获取聊天数据');
 
-      setChatData(data); // 保存原始数据，useEffect 会自动更新 markdown
+      setChatData(result.parsed); // 保存解析后数据，useEffect 会自动更新 markdown
+      setRawApiResponse(result.raw); // 保存原始 API 响应
       // 缓存到 localStorage
       if (platformInfo) {
-        saveChatDataToCache(platformInfo, data);
+        saveChatDataToCache(platformInfo, result.parsed);
       }
       setFetchStatus('success');
     } catch (err) {
@@ -497,7 +694,10 @@ messages: ${data.messages.length}
   // 复制到剪贴板
   const copyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(markdown);
+      const content = showJsonViewer && (rawApiResponse || chatData)
+        ? JSON.stringify(rawApiResponse || chatData, null, 2)
+        : markdown;
+      await navigator.clipboard.writeText(content);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -505,13 +705,20 @@ messages: ${data.messages.length}
     }
   };
 
-  // 下载 markdown
-  const downloadMarkdown = async () => {
-    const title = extractTitleFromMarkdown(markdown);
+  // 下载文件（markdown 或 json）
+  const downloadFile = async () => {
+    const isJson = showJsonViewer && (rawApiResponse || chatData);
+    const title = chatData?.title || extractTitleFromMarkdown(markdown);
     const dateStr = new Date().toISOString().split('T')[0];
-    const filename = `${title.replace(/[/\\:*?"<>|]/g, '-').slice(0, 50)}-${dateStr}.md`;
+    const ext = isJson ? 'json' : 'md';
+    const filename = `${title.replace(/[/\\:*?"<>|]/g, '-').slice(0, 50)}-${dateStr}.${ext}`;
 
-    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+    const content = isJson
+      ? JSON.stringify(rawApiResponse || chatData, null, 2)
+      : markdown;
+    const mimeType = isJson ? 'application/json;charset=utf-8' : 'text/markdown;charset=utf-8';
+
+    const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -555,13 +762,15 @@ messages: ${data.messages.length}
 
       {/* Dialog */}
       <div
+        ref={dialogRef}
         style={{
           position: 'fixed',
           left: '50%',
           top: '50%',
           transform: 'translate(-50%, -50%)',
           zIndex: 9999999,
-          width: '520px',
+          width: `${localSize.width}px`,
+          height: `${localSize.height}px`,
           maxWidth: '90vw',
           maxHeight: '85vh',
           borderRadius: '16px',
@@ -593,316 +802,464 @@ messages: ${data.messages.length}
           </svg>
         </button>
 
-        {/* Header with Tabs */}
-        <div style={{ borderBottom: '1px solid #D5D3CB', padding: '16px 20px 0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-            <span
-              style={{
-                display: 'inline-block',
-                width: '10px',
-                height: '10px',
-                borderRadius: '50%',
-                backgroundColor: '#CC785C',
-              }}
-            />
-            <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#181818', margin: 0 }}>导出内容</h2>
-          </div>
-
-          {/* Tabs */}
-          <div style={{ display: 'flex', gap: '4px' }}>
-            <button
-              onClick={() => isAiEnabled && setActiveTab('ai')}
-              disabled={!isAiEnabled}
-              style={{
-                padding: '8px 16px',
-                fontSize: '13px',
-                fontWeight: 500,
-                border: 'none',
-                borderRadius: '8px 8px 0 0',
-                backgroundColor: activeTab === 'ai' ? '#fff' : 'transparent',
-                color: !isAiEnabled ? '#aaa' : activeTab === 'ai' ? '#CC785C' : '#666',
-                cursor: isAiEnabled ? 'pointer' : 'not-allowed',
-                borderBottom: activeTab === 'ai' ? '2px solid #CC785C' : '2px solid transparent',
-                marginBottom: '-1px',
-                opacity: isAiEnabled ? 1 : 0.5,
-              }}>
-              AI 对话导出
-              {!isAiEnabled && <span style={{ marginLeft: '4px', fontSize: '11px', color: '#999' }}>(不可用)</span>}
-            </button>
-            <button
-              onClick={() => setActiveTab('clipboard')}
-              style={{
-                padding: '8px 16px',
-                fontSize: '13px',
-                fontWeight: 500,
-                border: 'none',
-                borderRadius: '8px 8px 0 0',
-                backgroundColor: activeTab === 'clipboard' ? '#fff' : 'transparent',
-                color: activeTab === 'clipboard' ? '#CC785C' : '#666',
-                cursor: 'pointer',
-                borderBottom: activeTab === 'clipboard' ? '2px solid #CC785C' : '2px solid transparent',
-                marginBottom: '-1px',
-              }}>
-              剪贴板导出
-            </button>
-          </div>
-        </div>
-
-        {/* AI Tab: 获取选项 */}
-        {activeTab === 'ai' && (
-          <div style={{ padding: '12px 20px', borderBottom: '1px solid #D5D3CB', backgroundColor: '#fafafa' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-              {/* Options */}
-              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={aiOptions.includeThinking}
-                    onChange={() => updateAiOption('includeThinking', !aiOptions.includeThinking)}
-                    style={{ width: '14px', height: '14px', accentColor: '#CC785C', cursor: 'pointer' }}
-                  />
-                  <span style={{ fontSize: '12px', color: '#181818' }}>thinking</span>
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={aiOptions.includeToolCalls}
-                    onChange={() => updateAiOption('includeToolCalls', !aiOptions.includeToolCalls)}
-                    style={{ width: '14px', height: '14px', accentColor: '#CC785C', cursor: 'pointer' }}
-                  />
-                  <span style={{ fontSize: '12px', color: '#181818' }}>tool calls</span>
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={aiOptions.textOnly}
-                    onChange={() => updateAiOption('textOnly', !aiOptions.textOnly)}
-                    style={{ width: '14px', height: '14px', accentColor: '#CC785C', cursor: 'pointer' }}
-                  />
-                  <span style={{ fontSize: '12px', color: '#181818' }}>仅文本</span>
-                </label>
-              </div>
-
-              {/* Fetch button */}
-              <button
-                onClick={handleFetchAiData}
-                disabled={fetchStatus === 'fetching'}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '6px 12px',
-                  borderRadius: '8px',
-                  border: chatData ? '1px solid #D5D3CB' : 'none',
-                  backgroundColor: chatData ? '#fff' : '#CC785C',
-                  color: chatData ? '#666' : '#fff',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  cursor: fetchStatus === 'fetching' ? 'not-allowed' : 'pointer',
-                  opacity: fetchStatus === 'fetching' ? 0.6 : 1,
-                  whiteSpace: 'nowrap',
-                }}>
-                {fetchStatus === 'fetching' ? (
-                  '获取中...'
-                ) : chatData ? (
-                  <>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 2v6h-6" />
-                      <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
-                      <path d="M3 22v-6h6" />
-                      <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-                    </svg>
-                    重新获取
-                  </>
-                ) : (
-                  <>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="17 8 12 3 7 8" />
-                      <line x1="12" y1="3" x2="12" y2="15" />
-                    </svg>
-                    获取 {platformName} 对话
-                  </>
-                )}
-              </button>
-            </div>
-
-            {/* Status */}
-            {fetchStatus === 'success' && (
-              <div
-                style={{
-                  marginTop: '8px',
-                  fontSize: '12px',
-                  color: '#15803d',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M20 6 9 17l-5-5" />
-                </svg>
-                已获取对话内容，可在下方编辑
-              </div>
-            )}
-            {fetchStatus === 'error' && (
-              <div
-                style={{
-                  marginTop: '8px',
-                  fontSize: '12px',
-                  color: '#b91c1c',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="m15 9-6 6" />
-                  <path d="m9 9 6 6" />
-                </svg>
-                {fetchError}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* 公共编辑区：Frontmatter */}
-        <div style={{ borderBottom: '1px solid #D5D3CB', padding: '12px 20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <label style={{ width: '40px', fontSize: '12px', color: '#666', flexShrink: 0 }}>标题</label>
-            <input
-              type="text"
-              value={parsed.frontmatter.title || ''}
-              onChange={e => updateFrontmatterField('title', e.target.value)}
-              style={{
-                flex: 1,
-                padding: '6px 8px',
-                borderRadius: '6px',
-                border: '1px solid #D5D3CB',
-                backgroundColor: '#fff',
-                color: '#181818',
-                fontSize: '12px',
-                outline: 'none',
-              }}
-            />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <label style={{ width: '40px', fontSize: '12px', color: '#666', flexShrink: 0 }}>来源</label>
-            <input
-              type="text"
-              value={parsed.frontmatter.source || ''}
-              onChange={e => updateFrontmatterField('source', e.target.value)}
-              style={{
-                flex: 1,
-                padding: '6px 8px',
-                borderRadius: '6px',
-                border: '1px solid #D5D3CB',
-                backgroundColor: '#fff',
-                color: '#181818',
-                fontSize: '12px',
-                outline: 'none',
-              }}
-            />
-          </div>
-          {markdownData?.presetName && (
-            <div style={{ marginTop: '8px' }}>
+        {/* Header */}
+        <div style={{ borderBottom: '1px solid #D5D3CB', padding: '16px 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: '32px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span
                 style={{
-                  backgroundColor: 'rgba(204, 120, 92, 0.1)',
-                  color: '#CC785C',
-                  borderRadius: '4px',
-                  padding: '2px 8px',
-                  fontSize: '11px',
-                }}>
-                {markdownData.presetName}
-              </span>
+                  display: 'inline-block',
+                  width: '10px',
+                  height: '10px',
+                  borderRadius: '50%',
+                  backgroundColor: '#CC785C',
+                }}
+              />
+              <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#181818', margin: 0 }}>导出内容</h2>
             </div>
-          )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button
+                onClick={() => setShowMeta(!showMeta)}
+                title={showMeta ? '隐藏 Meta 信息' : '显示 Meta 信息'}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  border: '1px solid #D5D3CB',
+                  backgroundColor: showMeta ? '#CC785C' : '#fff',
+                  color: showMeta ? '#fff' : '#666',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
+                Meta
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* 公共编辑区：Content Editor */}
-        <textarea
-          value={parsed.content}
-          onChange={e => updateContent(e.target.value)}
-          placeholder="内容..."
-          style={{
-            flex: 1,
-            minHeight: '180px',
-            padding: '12px 20px',
-            border: 'none',
-            backgroundColor: '#f5f5f5',
-            color: '#181818',
-            fontSize: '12px',
-            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-            resize: 'none',
-            outline: 'none',
-          }}
-        />
+        {/* Body + Footer wrapper */}
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+          {/* Content area */}
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'auto' }}>
+          {showMeta ? (
+            /* Meta 信息面板 - 独占模式 */
+            <div
+              style={{
+                flex: 1,
+                padding: '20px',
+                backgroundColor: '#fafafa',
+              }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <label style={{ width: '40px', fontSize: '12px', color: '#666', flexShrink: 0 }}>标题</label>
+              <input
+                type="text"
+                value={parsed.frontmatter.title || ''}
+                onChange={e => updateFrontmatterField('title', e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: '6px 10px',
+                  borderRadius: '6px',
+                  border: '1px solid #D5D3CB',
+                  backgroundColor: '#fff',
+                  color: '#181818',
+                  fontSize: '12px',
+                  outline: 'none',
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <label style={{ width: '40px', fontSize: '12px', color: '#666', flexShrink: 0 }}>来源</label>
+              <input
+                type="text"
+                value={parsed.frontmatter.source || ''}
+                onChange={e => updateFrontmatterField('source', e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: '6px 10px',
+                  borderRadius: '6px',
+                  border: '1px solid #D5D3CB',
+                  backgroundColor: '#fff',
+                  color: '#181818',
+                  fontSize: '12px',
+                  outline: 'none',
+                }}
+              />
+            </div>
+              {markdownData?.presetName && (
+                <div style={{ marginTop: '8px' }}>
+                  <span
+                    style={{
+                      backgroundColor: 'rgba(204, 120, 92, 0.1)',
+                      color: '#CC785C',
+                      borderRadius: '4px',
+                      padding: '2px 8px',
+                      fontSize: '11px',
+                    }}>
+                    {markdownData.presetName}
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Tabs + Content 正常模式 */
+            <>
+              {/* Tabs */}
+              <div style={{ display: 'flex', gap: '4px', padding: '0 20px', borderBottom: '1px solid #D5D3CB' }}>
+                <button
+                  onClick={() => isAiEnabled && setActiveTab('ai')}
+                  disabled={!isAiEnabled}
+                  style={{
+                    padding: '8px 16px',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    border: 'none',
+                    borderRadius: '8px 8px 0 0',
+                    backgroundColor: activeTab === 'ai' ? '#fff' : 'transparent',
+                    color: !isAiEnabled ? '#aaa' : activeTab === 'ai' ? '#CC785C' : '#666',
+                    cursor: isAiEnabled ? 'pointer' : 'not-allowed',
+                    borderBottom: activeTab === 'ai' ? '2px solid #CC785C' : '2px solid transparent',
+                    marginBottom: '-1px',
+                    opacity: isAiEnabled ? 1 : 0.5,
+                  }}>
+                  AI 对话导出
+                  {!isAiEnabled && <span style={{ marginLeft: '4px', fontSize: '11px', color: '#999' }}>(不可用)</span>}
+                </button>
+                <button
+                  onClick={() => setActiveTab('clipboard')}
+                  style={{
+                    padding: '8px 16px',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    border: 'none',
+                    borderRadius: '8px 8px 0 0',
+                    backgroundColor: activeTab === 'clipboard' ? '#fff' : 'transparent',
+                    color: activeTab === 'clipboard' ? '#CC785C' : '#666',
+                    cursor: 'pointer',
+                    borderBottom: activeTab === 'clipboard' ? '2px solid #CC785C' : '2px solid transparent',
+                    marginBottom: '-1px',
+                  }}>
+                  剪贴板导出
+                </button>
+              </div>
 
-        {/* Footer: 统一操作按钮 */}
-        <div
-          style={{
-            borderTop: '1px solid #D5D3CB',
-            padding: '12px 20px',
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: '12px',
-          }}>
-          <button
-            onClick={copyToClipboard}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 14px',
-              borderRadius: '10px',
-              border: '1px solid #D5D3CB',
-              backgroundColor: '#fff',
-              color: '#181818',
-              fontSize: '13px',
-              fontWeight: 500,
-              cursor: 'pointer',
-            }}>
-            {copied ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#15803d" strokeWidth="2">
-                <path d="M20 6 9 17l-5-5" />
-              </svg>
+              {/* 主内容区 */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  flex: 1,
+                  minHeight: 0,
+                  overflow: 'hidden',
+                }}>
+          {/* Content Editor 或 JSON Viewer */}
+          {showJsonViewer && (rawApiResponse || chatData) ? (
+              <div
+                style={{
+                  flex: 1,
+                  minHeight: '180px',
+                  padding: '12px 20px',
+                  backgroundColor: '#f6f8fa',
+                  overflow: 'auto',
+                }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '11px', color: '#666', fontWeight: 500 }}>
+                    {rawApiResponse ? '原始 API 响应' : '解析后数据（缓存）'}
+                  </span>
+                  <button
+                    onClick={() => setShowJsonViewer(false)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#666',
+                      padding: '2px 6px',
+                      fontSize: '11px',
+                    }}>
+                    切换到 Markdown
+                  </button>
+                </div>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                    lineHeight: 1.5,
+                  }}>
+                  <JsonNode data={rawApiResponse || chatData} />
+                </div>
+              </div>
             ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-              </svg>
-            )}
-            {copied ? '已复制' : '复制'}
-          </button>
-          <button
-            onClick={downloadMarkdown}
+              <div
+                style={{
+                  flex: 1,
+                  minHeight: '180px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  backgroundColor: '#f5f5f5',
+                  overflow: 'hidden',
+                }}>
+                {/* Header with toggle button */}
+                {chatData && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 20px 0' }}>
+                    <span style={{ fontSize: '11px', color: '#666', fontWeight: 500 }}>Markdown</span>
+                    <button
+                      onClick={() => setShowJsonViewer(true)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: '#666',
+                        padding: '2px 6px',
+                        fontSize: '11px',
+                      }}>
+                      切换到 JSON
+                    </button>
+                  </div>
+                )}
+                <textarea
+                  value={parsed.content}
+                  onChange={e => updateContent(e.target.value)}
+                  placeholder="内容..."
+                  style={{
+                    flex: 1,
+                    padding: chatData ? '8px 20px 12px' : '12px 20px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    color: '#181818',
+                    fontSize: '12px',
+                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                    resize: 'none',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+          )}
+              </div>
+            </>
+          )}
+          </div>
+
+          {/* Footer: 统一操作按钮 */}
+          <div
             style={{
+              borderTop: '1px solid #D5D3CB',
+              padding: '12px 20px',
               display: 'flex',
+              gap: '12px',
+              justifyContent: 'flex-end',
               alignItems: 'center',
-              gap: '6px',
-              padding: '8px 14px',
-              borderRadius: '10px',
-              border: 'none',
-              backgroundColor: downloadedFilename ? '#15803d' : '#CC785C',
-              color: '#fff',
-              fontSize: '13px',
-              fontWeight: 500,
-              cursor: 'pointer',
-              transition: 'background-color 0.2s',
+              flexShrink: 0,
             }}>
-            {downloadedFilename ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 6 9 17l-5-5" />
-              </svg>
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
+            {/* 错误提示 */}
+            {activeTab === 'ai' && fetchStatus === 'error' && (
+              <span style={{ fontSize: '12px', color: '#b91c1c', marginRight: 'auto' }}>{fetchError}</span>
             )}
-            {downloadedFilename ? '已复制文件名' : '下载'}
-          </button>
+
+            {/* 获取按钮 - Split Button */}
+            {activeTab === 'ai' && (
+              <div ref={fetchOptionsRef} style={{ position: 'relative', display: 'flex' }}>
+                <button
+                  onClick={handleFetchAiData}
+                  disabled={fetchStatus === 'fetching'}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 14px',
+                    borderRadius: chatData ? '10px 0 0 10px' : '10px',
+                    border: '1px solid #D5D3CB',
+                    borderRight: chatData ? 'none' : undefined,
+                    backgroundColor: '#fff',
+                    color: '#666',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    cursor: fetchStatus === 'fetching' ? 'not-allowed' : 'pointer',
+                    opacity: fetchStatus === 'fetching' ? 0.6 : 1,
+                  }}>
+                  {fetchStatus === 'fetching' ? (
+                    '获取中...'
+                  ) : chatData ? (
+                    <>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 2v6h-6" />
+                        <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                        <path d="M3 22v-6h6" />
+                        <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                      </svg>
+                      重新获取
+                    </>
+                  ) : (
+                    <>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                      </svg>
+                      获取对话
+                    </>
+                  )}
+                </button>
+                {/* 下拉箭头 - 有数据时显示 */}
+                {chatData && (
+                  <button
+                    onClick={() => setShowFetchOptions(!showFetchOptions)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '8px 8px',
+                      borderRadius: '0 10px 10px 0',
+                      border: '1px solid #D5D3CB',
+                      backgroundColor: showFetchOptions ? '#f5f5f5' : '#fff',
+                      color: '#666',
+                      cursor: 'pointer',
+                    }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </button>
+                )}
+                {/* 下拉菜单 */}
+                {showFetchOptions && chatData && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: 0,
+                      marginBottom: '4px',
+                      padding: '8px 12px',
+                      backgroundColor: '#fff',
+                      border: '1px solid #D5D3CB',
+                      borderRadius: '10px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      minWidth: '140px',
+                      zIndex: 10,
+                    }}>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <Switch
+                        checked={aiOptions.includeThinking}
+                        onCheckedChange={checked => updateAiOption('includeThinking', checked)}
+                      />
+                      <span className="text-xs text-foreground">thinking</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <Switch
+                        checked={aiOptions.includeToolCalls}
+                        onCheckedChange={checked => updateAiOption('includeToolCalls', checked)}
+                      />
+                      <span className="text-xs text-foreground">tool calls</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <Switch
+                        checked={aiOptions.textOnly}
+                        onCheckedChange={checked => updateAiOption('textOnly', checked)}
+                      />
+                      <span className="text-xs text-foreground">仅文本</span>
+                    </label>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <button
+              onClick={copyToClipboard}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 14px',
+                borderRadius: '10px',
+                border: '1px solid #D5D3CB',
+                backgroundColor: '#fff',
+                color: '#181818',
+                fontSize: '13px',
+                fontWeight: 500,
+                cursor: 'pointer',
+              }}>
+              {copied ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#15803d" strokeWidth="2">
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
+              )}
+              {copied ? '已复制' : showJsonViewer ? '复制 JSON' : '复制'}
+            </button>
+            <button
+              onClick={downloadFile}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 14px',
+                borderRadius: '10px',
+                border: 'none',
+                backgroundColor: downloadedFilename ? '#15803d' : '#CC785C',
+                color: '#fff',
+                fontSize: '13px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'background-color 0.2s',
+              }}>
+              {downloadedFilename ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+              )}
+              {downloadedFilename ? '已复制文件名' : showJsonViewer ? '下载 JSON' : '下载'}
+            </button>
+          </div>
+
+          {/* Resize handles */}
+          <div
+            onMouseDown={e => handleResizeStart(e, 'e')}
+            style={{
+              position: 'absolute',
+              right: 0,
+              top: '20%',
+              bottom: '20%',
+              width: '6px',
+              cursor: 'ew-resize',
+            }}
+          />
+          <div
+            onMouseDown={e => handleResizeStart(e, 's')}
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: '20%',
+              right: '20%',
+              height: '6px',
+              cursor: 'ns-resize',
+            }}
+          />
+          <div
+            onMouseDown={e => handleResizeStart(e, 'se')}
+            style={{
+              position: 'absolute',
+              right: 0,
+              bottom: 0,
+              width: '16px',
+              height: '16px',
+              cursor: 'nwse-resize',
+            }}
+          />
         </div>
       </div>
     </>

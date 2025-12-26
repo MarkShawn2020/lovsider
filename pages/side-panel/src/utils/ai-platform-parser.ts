@@ -66,6 +66,10 @@ export const PLATFORM_NAMES: Record<AIPlatform, string> = {
 };
 
 // 解析 Google AI Studio 响应
+// 数据结构：
+// - chunk[0] 是主文本，chunk[8] 是 role (user/model)
+// - chunk[19] === 1 表示整条消息是 thinking
+// - chunk[29] 包含子 blocks，用于流式显示
 function parseGoogleAIStudioResponse(data: GoogleAIStudioResponse, url: string): UnifiedChatData {
   const root = data[0] as unknown[];
   const promptId = (root[0] as string) || '';
@@ -81,31 +85,50 @@ function parseGoogleAIStudioResponse(data: GoogleAIStudioResponse, url: string):
   for (const turn of conversations) {
     if (!Array.isArray(turn)) continue;
 
-    for (const msg of turn) {
-      if (!Array.isArray(msg)) continue;
+    // 按顺序处理：遇到 user 时先输出之前的 assistant
+    let thinkingTexts: string[] = [];
+    let responseTexts: string[] = [];
 
-      const text = (msg[0] as string) || '';
-      const role = msg[8] as string;
+    const flushAssistant = () => {
+      if (thinkingTexts.length > 0 || responseTexts.length > 0) {
+        messages.push({
+          role: 'assistant',
+          text: responseTexts.join(''),
+          thinking: thinkingTexts.length > 0 ? thinkingTexts.join('\n\n') : undefined,
+        });
+        thinkingTexts = [];
+        responseTexts = [];
+      }
+    };
 
+    for (const chunk of turn) {
+      if (!Array.isArray(chunk)) continue;
+
+      const role = chunk[8] as string;
       if (!role || (role !== 'user' && role !== 'model')) continue;
 
-      const unifiedRole = role === 'user' ? 'human' : 'assistant';
+      const text = (chunk[0] as string) || '';
 
-      let thinking: string | undefined;
-      const thinkingBlocks = msg[29] as unknown[] | undefined;
-      if (Array.isArray(thinkingBlocks)) {
-        const thinkingTexts = thinkingBlocks
-          .filter(b => Array.isArray(b) && b[1])
-          .map(b => (b as unknown[])[1] as string);
-        if (thinkingTexts.length > 0) {
-          thinking = thinkingTexts.join('\n\n');
+      if (role === 'user') {
+        // 先输出之前收集的 assistant 消息
+        flushAssistant();
+        // 添加 user 消息（跳过空消息）
+        if (text) {
+          messages.push({ role: 'human', text });
+        }
+      } else if (role === 'model') {
+        // chunk[19] === 1 表示是 thinking 消息
+        const isThinking = chunk[19] === 1;
+        if (isThinking) {
+          if (text) thinkingTexts.push(text);
+        } else {
+          if (text) responseTexts.push(text);
         }
       }
-
-      if (!text && !thinking) continue;
-
-      messages.push({ role: unifiedRole, text, thinking });
     }
+
+    // 处理最后剩余的 assistant 消息
+    flushAssistant();
   }
 
   return {
