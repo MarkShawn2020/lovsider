@@ -273,6 +273,7 @@ export const UnifiedExportDialog = () => {
   const [showDownloadMenu, setShowDownloadMenu] = useState(false); // split-button 菜单
   const [showMeta, setShowMeta] = useState(false);
   const [showFetchOptions, setShowFetchOptions] = useState(false);
+  const [shouldAutoFetch, setShouldAutoFetch] = useState(false); // 自动获取触发器
   const fetchOptionsRef = useRef<HTMLDivElement>(null);
   const { dialogSize } = useStorage(exportLayoutStorage);
   const [isResizing, setIsResizing] = useState(false);
@@ -338,6 +339,20 @@ export const UnifiedExportDialog = () => {
   // 缓存 key 生成
   const getCacheKey = (pInfo: PlatformInfo) => `lovsider-chat-cache-${pInfo.platform}-${pInfo.id}`;
 
+  // 检测当前页面平台信息
+  const detectPlatform = useCallback((): PlatformInfo | null => {
+    const url = window.location.href;
+    const claudeMatch = url.match(/^https:\/\/claude\.ai\/chat\/([a-f0-9-]+)/);
+    if (claudeMatch) {
+      return { platform: 'claude', id: claudeMatch[1], name: 'Claude' };
+    }
+    const googleMatch = url.match(/^https:\/\/aistudio\.google\.com\/prompts\/([a-zA-Z0-9_-]+)/);
+    if (googleMatch) {
+      return { platform: 'google-ai-studio', id: googleMatch[1], name: 'AI Studio' };
+    }
+    return null;
+  }, []);
+
   // 从缓存加载对话数据
   const loadCachedChatData = (pInfo: PlatformInfo): UnifiedChatData | null => {
     try {
@@ -382,9 +397,11 @@ export const UnifiedExportDialog = () => {
           if (cached) {
             setChatData(cached);
             setFetchStatus('success');
+            setShouldAutoFetch(false);
           } else {
             setChatData(null);
             setFetchStatus('idle');
+            setShouldAutoFetch(true); // 无缓存时触发自动获取
           }
         } else {
           setActiveTab('clipboard');
@@ -408,6 +425,42 @@ export const UnifiedExportDialog = () => {
       claudeExportStorage.getOptions().then(setAiOptions);
     }
   }, [open]);
+
+  // 处理 URL 变化
+  const handleUrlChange = useCallback(() => {
+    const newPlatformInfo = detectPlatform();
+
+    if (newPlatformInfo && newPlatformInfo.id !== platformInfo?.id) {
+      setPlatformInfo(newPlatformInfo);
+      const cached = loadCachedChatData(newPlatformInfo);
+      if (cached) {
+        setChatData(cached);
+        setFetchStatus('success');
+        setShouldAutoFetch(false);
+      } else {
+        setChatData(null);
+        setFetchStatus('idle');
+        setShouldAutoFetch(true);
+      }
+    } else if (!newPlatformInfo && platformInfo) {
+      setPlatformInfo(null);
+      setActiveTab('clipboard');
+    }
+  }, [detectPlatform, platformInfo?.id]);
+
+  // 监听 URL 变化消息（来自 background -> content -> content-ui）
+  useEffect(() => {
+    if (!open) return;
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'lovsider-url-changed') {
+        handleUrlChange();
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [open, handleUrlChange]);
 
   // 更新 AI 选项
   const updateAiOption = async (key: keyof ClaudeExportOptions, value: boolean) => {
@@ -719,6 +772,14 @@ messages: ${data.messages.length}
       setFetchStatus('error');
     }
   };
+
+  // 无缓存时自动获取
+  useEffect(() => {
+    if (shouldAutoFetch && open && activeTab === 'ai' && fetchStatus === 'idle') {
+      setShouldAutoFetch(false);
+      handleFetchAiData();
+    }
+  }, [shouldAutoFetch, open, activeTab, fetchStatus]);
 
   // ========== 公共编辑操作 ==========
 

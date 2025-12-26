@@ -134,11 +134,12 @@ export class AIExportBadge {
   }
 
   private openExportDialog(): void {
-    // 发送消息给 content-ui 打开统一导出对话框
+    // 实时检测平台信息（URL 可能已变化）
+    const currentPlatformInfo = AIExportBadge.detectPlatform();
     window.postMessage(
       {
         type: 'lovsider-open-unified-export',
-        platformInfo: this.platformInfo,
+        platformInfo: currentPlatformInfo,
         markdownData: null,
       },
       '*',

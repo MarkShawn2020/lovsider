@@ -260,8 +260,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // 监听标签页更新事件，确保内容脚本正常工作
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url) {
-    // 可以在这里注入内容脚本或进行其他初始化操作
     console.log('[Lovsider] Tab updated:', tab.url);
+  }
+  // URL 变化时通知 content script
+  if (changeInfo.url) {
+    safeSendTabMessage(tabId, { action: 'urlChanged', url: changeInfo.url });
   }
 });
 

@@ -754,6 +754,10 @@ chrome.runtime?.onMessage?.addListener(
       );
       console.log('[Lovsider] 已发送 postMessage');
       sendResponse({ success: true });
+    } else if (msg.action === 'urlChanged') {
+      // URL 变化时通知 content-ui
+      window.postMessage({ type: 'lovsider-url-changed' }, '*');
+      sendResponse({ success: true });
     }
 
     return false;
