@@ -8,7 +8,7 @@
 </h1>
 
 <p align="center">
-  <strong>AI Chat Export & Web Capture Toolkit</strong><br>
+  <strong>AI Chat Export & Web Content Capture</strong><br>
   <sub>Chrome Extension · Firefox Add-on</sub>
 </p>
 
@@ -21,9 +21,9 @@
 
 ---
 
-## Highlights
+## Core Features
 
-### AI Chat Export
+### 1. AI Chat Export
 
 Export conversations from **Claude.ai** and **Google AI Studio** with full fidelity.
 
@@ -31,96 +31,69 @@ Export conversations from **Claude.ai** and **Google AI Studio** with full fidel
   <img src="docs/images/ai-export.png" alt="AI Chat Export" width="600">
 </p>
 
-- **Backend API-based** - Fetches complete conversation data, not DOM scraping
+**How to use:**
+- Click floating badge on AI chat pages, or
+- Press `Cmd+E` (Mac) / `Ctrl+E` (Windows)
+
+**Features:**
+- **API-based** - Fetches complete conversation via backend API, not DOM scraping
 - **Thinking Process** - Toggle to include/exclude AI's thinking blocks
 - **Multiple Formats** - Export as Markdown or JSON
-- **One-click Download** - Copy to clipboard or download as file
+- **Quick Actions** - Copy to clipboard or download as file
 
----
+| Platform | Export | Thinking Support |
+|----------|--------|------------------|
+| Claude.ai | ✅ | ✅ |
+| Google AI Studio | ✅ | ✅ |
 
-## Features
+### 2. Web Content Capture
 
-### Page Capture
+Capture any web page content and export as Markdown via sidebar.
+
+**How to use:**
+- Press `Cmd+Shift+S` to open sidebar
+- Select content area
+
+**Features:**
 - **Smart Selection** - Auto-detect main content areas
 - **Manual Selection** - Click to select any DOM element
-- **Markdown Export** - One-click convert and download
+- **Markdown Export** - Convert HTML to clean Markdown
 
-### Form Auto-fill
-- Detect form fields on pages
-- Template-based filling
-- Simulate real typing behavior
-
-### Developer Tools
-- Element marking (inputs, containers)
-- Form debugging
-- Command-line interface
-
-### Floating Badge
-- Draggable positioning
-- Right-click menu for quick actions
-- Hide per-site or globally
-
-## Installation
-
-```bash
-# Clone repository
-git clone https://github.com/MarkShawn2020/lovsider.git
-cd lovsider
-
-# Install dependencies
-pnpm install
-
-# Development mode
-pnpm dev
-
-# Build
-pnpm build
-```
-
-### Load Extension
-
-**Chrome:**
-1. Open `chrome://extensions`
-2. Enable "Developer mode"
-3. Click "Load unpacked"
-4. Select `dist` directory
-
-**Firefox:**
-1. Run `pnpm dev:firefox`
-2. Open `about:debugging#/runtime/this-firefox`
-3. Click "Load Temporary Add-on"
-4. Select `dist/manifest.json`
-
-## Project Structure
-
-```
-lovsider/
-├── chrome-extension/     # Extension entry (manifest, background)
-├── pages/
-│   ├── side-panel/       # Sidebar main UI
-│   ├── content/          # Content scripts
-│   ├── popup/            # Popup window
-│   └── options/          # Settings page
-└── packages/
-    ├── shared/           # Shared utilities
-    ├── storage/          # Storage wrapper
-    ├── ui/               # UI components
-    └── i18n/             # Internationalization
-```
-
-## Tech Stack
-
-- **Framework**: React 19 + TypeScript
-- **Build**: Vite + Turborepo
-- **Styling**: Tailwind CSS + shadcn/ui
-- **Extension**: Chrome Extension Manifest V3
+---
 
 ## Keyboard Shortcuts
 
 | Shortcut | Action |
 |----------|--------|
-| `Ctrl+Shift+S` | Toggle sidebar |
+| `Cmd+E` | Open AI chat export dialog |
+| `Cmd+Shift+S` | Toggle sidebar |
 | `Escape` | Exit selection mode |
+
+## Installation
+
+### From Release
+
+Download the latest `.zip` from [Releases](https://github.com/MarkShawn2020/lovsider/releases), unzip and load in browser.
+
+### From Source
+
+```bash
+git clone https://github.com/MarkShawn2020/lovsider.git
+cd lovsider
+pnpm install
+pnpm build
+```
+
+**Chrome:** `chrome://extensions` → Enable Developer mode → Load unpacked → Select `dist`
+
+**Firefox:** `about:debugging` → Load Temporary Add-on → Select `dist/manifest.json`
+
+## Tech Stack
+
+- React 19 + TypeScript
+- Vite + Turborepo
+- Tailwind CSS + shadcn/ui
+- Chrome Extension Manifest V3
 
 ## License
 

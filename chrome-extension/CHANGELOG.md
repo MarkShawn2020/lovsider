@@ -2,28 +2,31 @@
 
 ## 0.1.0
 
-### AI Chat Export - Perfect Conversation Backup
+### Core Features
 
-Export conversations from **Claude.ai** and **Google AI Studio** with full fidelity.
+**1. AI Chat Export**
 
-- **Backend API-based** - Fetches complete conversation data directly from API
-- **Thinking Process Control** - Toggle to include/exclude AI's thinking blocks
-- **Multiple Formats** - Export as Markdown or JSON
-- **One-click Actions** - Copy to clipboard or download as file
+Export conversations from Claude.ai and Google AI Studio with full fidelity.
 
-### Supported Platforms
+- API-based: Fetches complete conversation via backend API
+- Thinking Process: Toggle to include/exclude AI's thinking blocks
+- Multiple Formats: Export as Markdown or JSON
+- Quick Actions: Copy to clipboard or download as file
+- Trigger: Click floating badge or press `Cmd+E`
 
 | Platform | Export | Thinking |
 |----------|--------|----------|
 | Claude.ai | ✅ | ✅ |
 | Google AI Studio | ✅ | ✅ |
 
-### Other Features
+**2. Web Content Capture**
 
-- Page capture with smart/manual selection
-- Markdown conversion
-- Form auto-fill
-- Floating badge with quick actions
+Capture any web page content and export as Markdown via sidebar.
+
+- Smart Selection: Auto-detect main content areas
+- Manual Selection: Click to select any DOM element
+- Markdown Export: Convert HTML to clean Markdown
+- Trigger: Press `Cmd+Shift+S` to open sidebar
 
 ## 1.2.1
 
