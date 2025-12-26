@@ -26,7 +26,7 @@ Capture any web page content and export as Markdown via sidebar.
 - Smart Selection: Auto-detect main content areas
 - Manual Selection: Click to select any DOM element
 - Markdown Export: Convert HTML to clean Markdown
-- Trigger: Press `Cmd+Shift+S` to open sidebar
+- Trigger: Click extension icon in toolbar to open sidebar
 
 ## 1.2.1
 

@@ -51,8 +51,8 @@ Export conversations from **Claude.ai** and **Google AI Studio** with full fidel
 Capture any web page content and export as Markdown via sidebar.
 
 **How to use:**
-- Press `Cmd+Shift+S` to open sidebar
-- Select content area
+- Click extension icon in toolbar to open sidebar
+- Select content area (smart or manual)
 
 **Features:**
 - **Smart Selection** - Auto-detect main content areas
@@ -66,7 +66,6 @@ Capture any web page content and export as Markdown via sidebar.
 | Shortcut | Action |
 |----------|--------|
 | `Cmd+E` | Open AI chat export dialog |
-| `Cmd+Shift+S` | Toggle sidebar |
 | `Escape` | Exit selection mode |
 
 ## Installation
