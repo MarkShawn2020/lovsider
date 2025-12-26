@@ -1,5 +1,12 @@
 # chrome-extension
 
+## 0.1.0
+
+### Minor Changes
+
+- 重置版本号至 v0.1.0，开始新的版本管理周期
+- 包含所有之前版本的功能
+
 ## 1.2.1
 
 ### Patch Changes
