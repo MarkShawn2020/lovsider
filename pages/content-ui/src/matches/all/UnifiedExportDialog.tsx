@@ -845,16 +845,13 @@ messages: ${data.messages.length}
         <div style={{ borderBottom: '1px solid #D5D3CB', padding: '16px 20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: '32px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span
-                style={{
-                  display: 'inline-block',
-                  width: '10px',
-                  height: '10px',
-                  borderRadius: '50%',
-                  backgroundColor: '#CC785C',
-                }}
+              <img
+                src={chrome.runtime.getURL('logo.svg')}
+                alt="Lovsider"
+                style={{ width: '20px', height: '20px', flexShrink: 0 }}
               />
-              <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#181818', margin: 0 }}>导出内容</h2>
+              <span style={{ fontSize: '15px', fontWeight: 600, color: '#181818' }}>Lovsider</span>
+              <span style={{ fontSize: '11px', color: '#999', fontWeight: 400 }}>v1.2.1</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <button
