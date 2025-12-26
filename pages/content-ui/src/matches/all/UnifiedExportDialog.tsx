@@ -269,6 +269,8 @@ export const UnifiedExportDialog = () => {
   const [thinkingCache, setThinkingCache] = useState<Map<number, string>>(new Map());
   const [showJsonViewer, setShowJsonViewer] = useState(false);
   const [rawApiResponse, setRawApiResponse] = useState<unknown>(null); // 原始 API 响应
+  const [copyPathOnDownload, setCopyPathOnDownload] = useState(true); // 下载时复制文件路径
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false); // split-button 菜单
   const [showMeta, setShowMeta] = useState(false);
   const [showFetchOptions, setShowFetchOptions] = useState(false);
   const fetchOptionsRef = useRef<HTMLDivElement>(null);
@@ -758,23 +760,33 @@ messages: ${data.messages.length}
     const content = isJson ? JSON.stringify(rawApiResponse || chatData, null, 2) : markdown;
     const mimeType = isJson ? 'application/json;charset=utf-8' : 'text/markdown;charset=utf-8';
 
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    // 复制文件名到剪贴板
     try {
-      await navigator.clipboard.writeText(filename);
-      setDownloadedFilename(filename);
-      setTimeout(() => setDownloadedFilename(''), 2000);
+      // 通过 background script 下载，获取完整文件路径
+      const response = await chrome.runtime.sendMessage({
+        action: 'downloadFile',
+        content,
+        filename,
+        mimeType,
+      });
+
+      if (response?.success && response.filePath && copyPathOnDownload) {
+        // 路径包含空格时用引号包围
+        const pathToCopy = response.filePath.includes(' ') ? `"${response.filePath}"` : response.filePath;
+        await navigator.clipboard.writeText(pathToCopy);
+        setDownloadedFilename(pathToCopy);
+        setTimeout(() => setDownloadedFilename(''), 2000);
+      }
     } catch {
-      // 忽略
+      // Fallback: 使用传统方式下载（无法获取路径）
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
   };
 
@@ -1245,35 +1257,96 @@ messages: ${data.messages.length}
               )}
               {copied ? '已复制' : showJsonViewer ? '复制 JSON' : '复制'}
             </button>
-            <button
-              onClick={downloadFile}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 14px',
-                borderRadius: '10px',
-                border: 'none',
-                backgroundColor: downloadedFilename ? '#15803d' : '#CC785C',
-                color: '#fff',
-                fontSize: '13px',
-                fontWeight: 500,
-                cursor: 'pointer',
-                transition: 'background-color 0.2s',
-              }}>
-              {downloadedFilename ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M20 6 9 17l-5-5" />
+            {/* Split Button: 下载 + 下拉菜单 */}
+            <div style={{ position: 'relative', display: 'flex' }}>
+              <button
+                onClick={downloadFile}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 14px',
+                  borderRadius: '10px 0 0 10px',
+                  border: 'none',
+                  backgroundColor: downloadedFilename ? '#15803d' : '#CC785C',
+                  color: '#fff',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s',
+                }}>
+                {downloadedFilename ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                )}
+                {downloadedFilename ? '已复制路径' : showJsonViewer ? '下载 JSON' : '下载'}
+              </button>
+              <button
+                onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '8px 8px',
+                  borderRadius: '0 10px 10px 0',
+                  border: 'none',
+                  borderLeft: '1px solid rgba(255,255,255,0.2)',
+                  backgroundColor: downloadedFilename ? '#15803d' : '#CC785C',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s',
+                }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="6 15 12 9 18 15" />
                 </svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
+              </button>
+              {showDownloadMenu && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: '100%',
+                    right: 0,
+                    marginBottom: '4px',
+                    backgroundColor: '#fff',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    border: '1px solid #D5D3CB',
+                    padding: '4px',
+                    minWidth: '180px',
+                    zIndex: 10,
+                  }}>
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 12px',
+                      cursor: 'pointer',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      color: '#181818',
+                      userSelect: 'none',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F5F5F3')}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>
+                    <input
+                      type="checkbox"
+                      checked={copyPathOnDownload}
+                      onChange={e => setCopyPathOnDownload(e.target.checked)}
+                      style={{ accentColor: '#CC785C' }}
+                    />
+                    下载时复制文件路径
+                  </label>
+                </div>
               )}
-              {downloadedFilename ? '已复制文件名' : showJsonViewer ? '下载 JSON' : '下载'}
-            </button>
+            </div>
           </div>
 
           {/* Resize handles */}

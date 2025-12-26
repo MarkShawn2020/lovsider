@@ -1,5 +1,6 @@
 import 'webextension-polyfill';
 import { dbManager, safeSendTabMessage } from '@extension/shared';
+import { downloadSettingsStorage } from '@extension/storage';
 
 console.log('[Lovsider] Background script loaded');
 
@@ -171,6 +172,86 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     const extensionId = chrome.runtime.id;
     chrome.tabs.create({ url: `chrome://extensions/?id=${extensionId}` });
     sendResponse({ success: true });
+  } else if (request.action === 'downloadFile') {
+    // 处理文件下载请求（来自 content-ui）
+    (async () => {
+      try {
+        const { content, filename, mimeType } = request;
+        const settings = await downloadSettingsStorage.getSettings();
+
+        // 创建数据 URL
+        const dataUrl = `data:${mimeType},${encodeURIComponent(content)}`;
+
+        // 构建下载选项
+        const downloadOptions: chrome.downloads.DownloadOptions = {
+          url: dataUrl,
+          filename: settings.lastUsedPath ? `${settings.lastUsedPath}/${filename}` : filename,
+          saveAs: true,
+        };
+
+        const downloadId = await chrome.downloads.download(downloadOptions);
+
+        // 监听下载完成
+        let handled = false;
+        const handleComplete = async () => {
+          if (handled) return;
+          handled = true;
+          chrome.downloads.onChanged.removeListener(onDownloadChanged);
+
+          // 获取下载信息
+          chrome.downloads.search({ id: downloadId }, async results => {
+            if (results.length > 0 && results[0].filename) {
+              const filePath = results[0].filename;
+
+              // 更新存储的路径
+              const pathParts = filePath.split(/[/\\]/);
+              const directoryPath = pathParts.slice(0, -1).join('/');
+              const homeDir = pathParts.find(part => part === 'Users' || part === 'home' || part.match(/^[A-Z]:$/))
+                ? pathParts.slice(0, 3).join('/')
+                : '';
+
+              let relativePath = '';
+              if (homeDir && directoryPath.startsWith(homeDir)) {
+                const downloadsIndex = pathParts.findIndex(part => part.toLowerCase() === 'downloads');
+                if (downloadsIndex !== -1 && downloadsIndex < pathParts.length) {
+                  relativePath = pathParts.slice(downloadsIndex, -1).join('/');
+                }
+              }
+
+              await downloadSettingsStorage.updateSettings({
+                lastUsedPath: relativePath,
+                lastUsedAbsolutePath: directoryPath,
+              });
+
+              sendResponse({ success: true, filePath });
+            } else {
+              sendResponse({ success: false, error: 'Download completed but no path available' });
+            }
+          });
+        };
+
+        const onDownloadChanged = (delta: chrome.downloads.DownloadDelta) => {
+          if (delta.id === downloadId && delta.state?.current === 'complete') {
+            handleComplete();
+          } else if (delta.id === downloadId && delta.state?.current === 'interrupted') {
+            handled = true;
+            chrome.downloads.onChanged.removeListener(onDownloadChanged);
+            sendResponse({ success: false, error: 'Download was interrupted' });
+          }
+        };
+
+        chrome.downloads.onChanged.addListener(onDownloadChanged);
+
+        // 立即检查（处理瞬间完成的情况）
+        chrome.downloads.search({ id: downloadId }, results => {
+          if (results.length > 0 && results[0].state === 'complete') {
+            handleComplete();
+          }
+        });
+      } catch (error) {
+        sendResponse({ success: false, error: String(error) });
+      }
+    })();
   }
 
   return true; // 保持消息通道开放
