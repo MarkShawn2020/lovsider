@@ -1,5 +1,11 @@
 # @extension/devtools
 
+## 1.3.0
+
+### Patch Changes
+
+- @extension/shared@1.3.0
+
 ## 1.2.1
 
 ### Patch Changes

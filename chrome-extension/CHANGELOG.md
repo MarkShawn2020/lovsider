@@ -1,5 +1,21 @@
 # chrome-extension
 
+## 1.3.0
+
+### Minor Changes
+
+- feat(export): 下载按钮升级为 split-button，支持复制文件路径
+
+  - 使用 chrome.downloads API 获取实际下载路径
+  - 添加下拉菜单勾选项控制是否复制路径
+  - 路径包含空格时自动添加引号
+
+### Patch Changes
+
+- @extension/env@1.3.0
+- @extension/shared@1.3.0
+- @extension/storage@1.3.0
+
 ## 0.1.0
 
 ### Core Features
@@ -14,10 +30,10 @@ Export conversations from Claude.ai and Google AI Studio with full fidelity.
 - Quick Actions: Copy to clipboard or download as file
 - Trigger: Click floating badge or press `Cmd+E`
 
-| Platform | Export | Thinking |
-|----------|--------|----------|
-| Claude.ai | ✅ | ✅ |
-| Google AI Studio | ✅ | ✅ |
+| Platform         | Export | Thinking |
+| ---------------- | ------ | -------- |
+| Claude.ai        | ✅     | ✅       |
+| Google AI Studio | ✅     | ✅       |
 
 **2. Web Content Capture**
 

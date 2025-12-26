@@ -1,5 +1,15 @@
 # @extension/content-ui
 
+## 1.3.0
+
+### Patch Changes
+
+- @extension/env@1.3.0
+- @extension/i18n@1.3.0
+- @extension/shared@1.3.0
+- @extension/storage@1.3.0
+- @extension/ui@1.3.0
+
 ## 1.2.1
 
 ### Patch Changes
