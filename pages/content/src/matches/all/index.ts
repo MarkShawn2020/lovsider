@@ -887,10 +887,10 @@ if (document.readyState === 'loading') {
   }, 500);
 }
 
-// 监听 Cmd+E / Ctrl+E 快捷键打开导出弹窗
+// 监听 Shift+Cmd+P / Shift+Ctrl+P 快捷键打开导出弹窗
 document.addEventListener('keydown', (e: KeyboardEvent) => {
-  // Cmd+E (Mac) 或 Ctrl+E (Windows/Linux)
-  if ((e.metaKey || e.ctrlKey) && e.key === 'e') {
+  // Shift+Cmd+P (Mac) 或 Shift+Ctrl+P (Windows/Linux)
+  if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'p') {
     // 检查是否在输入框中
     const activeEl = document.activeElement;
     if (
@@ -903,7 +903,7 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
 
     e.preventDefault();
 
-    console.log('[Lovsider] Cmd+E 打开统一导出弹窗');
+    console.log('[Lovsider] Shift+Cmd+P 打开统一导出弹窗');
 
     // 检测是否在 AI 平台
     const platformInfo = AIExportBadge.detectPlatform();
