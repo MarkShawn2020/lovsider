@@ -1,8 +1,8 @@
+import { Switch } from '../../components/Switch';
+import { useStorage } from '@extension/shared';
 import { claudeExportStorage, exportLayoutStorage } from '@extension/storage';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import type { ClaudeExportOptions } from '@extension/storage';
-import { Switch } from '../../components/Switch';
-import { useStorage } from '@extension/shared';
 
 // 平台信息
 interface PlatformInfo {
@@ -61,7 +61,9 @@ const JsonNode = ({ data, depth = 0, label }: JsonNodeProps) => {
   const [hovered, setHovered] = useState(false);
   const indent = depth * 16;
 
-  const isCollapsible = (Array.isArray(data) && data.length > 0) || (typeof data === 'object' && data !== null && Object.keys(data).length > 0);
+  const isCollapsible =
+    (Array.isArray(data) && data.length > 0) ||
+    (typeof data === 'object' && data !== null && Object.keys(data).length > 0);
 
   const rowStyle = {
     cursor: isCollapsible ? 'pointer' : 'default',
@@ -81,9 +83,27 @@ const JsonNode = ({ data, depth = 0, label }: JsonNodeProps) => {
   };
 
   // 原始类型
-  if (data === null) return <div {...rowProps}>{label}<span style={{ color: '#666' }}>null</span></div>;
-  if (typeof data === 'boolean') return <div {...rowProps}>{label}<span style={{ color: '#0550ae' }}>{String(data)}</span></div>;
-  if (typeof data === 'number') return <div {...rowProps}>{label}<span style={{ color: '#0550ae' }}>{data}</span></div>;
+  if (data === null)
+    return (
+      <div {...rowProps}>
+        {label}
+        <span style={{ color: '#666' }}>null</span>
+      </div>
+    );
+  if (typeof data === 'boolean')
+    return (
+      <div {...rowProps}>
+        {label}
+        <span style={{ color: '#0550ae' }}>{String(data)}</span>
+      </div>
+    );
+  if (typeof data === 'number')
+    return (
+      <div {...rowProps}>
+        {label}
+        <span style={{ color: '#0550ae' }}>{data}</span>
+      </div>
+    );
   if (typeof data === 'string') {
     const truncated = data.length > 100 ? data.slice(0, 100) + '...' : data;
     return (
@@ -98,9 +118,16 @@ const JsonNode = ({ data, depth = 0, label }: JsonNodeProps) => {
 
   // 数组
   if (Array.isArray(data)) {
-    if (data.length === 0) return <div {...rowProps}>{label}<span style={{ color: '#666' }}>[]</span></div>;
+    if (data.length === 0)
+      return (
+        <div {...rowProps}>
+          {label}
+          <span style={{ color: '#666' }}>[]</span>
+        </div>
+      );
     return (
       <span>
+        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
         <div {...rowProps} onClick={() => setCollapsed(!collapsed)}>
           {label}
           <span style={{ color: '#666', marginRight: '4px', fontSize: '10px' }}>{collapsed ? '▶' : '▼'}</span>
@@ -122,13 +149,24 @@ const JsonNode = ({ data, depth = 0, label }: JsonNodeProps) => {
   // 对象
   if (typeof data === 'object') {
     const keys = Object.keys(data as Record<string, unknown>);
-    if (keys.length === 0) return <div {...rowProps}>{label}<span style={{ color: '#666' }}>{'{}'}</span></div>;
+    if (keys.length === 0)
+      return (
+        <div {...rowProps}>
+          {label}
+          <span style={{ color: '#666' }}>{'{}'}</span>
+        </div>
+      );
     return (
       <span>
+        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
         <div {...rowProps} onClick={() => setCollapsed(!collapsed)}>
           {label}
           <span style={{ color: '#666', marginRight: '4px', fontSize: '10px' }}>{collapsed ? '▶' : '▼'}</span>
-          <span style={{ color: '#666' }}>{'{'}{keys.length}{'}'}</span>
+          <span style={{ color: '#666' }}>
+            {'{'}
+            {keys.length}
+            {'}'}
+          </span>
         </div>
         {!collapsed && (
           <div style={{ marginLeft: `${indent + 16}px` }}>
@@ -152,7 +190,12 @@ const JsonNode = ({ data, depth = 0, label }: JsonNodeProps) => {
     );
   }
 
-  return <div {...rowProps}>{label}<span>{String(data)}</span></div>;
+  return (
+    <div {...rowProps}>
+      {label}
+      <span>{String(data)}</span>
+    </div>
+  );
 };
 
 // 解析 frontmatter
@@ -694,9 +737,8 @@ messages: ${data.messages.length}
   // 复制到剪贴板
   const copyToClipboard = async () => {
     try {
-      const content = showJsonViewer && (rawApiResponse || chatData)
-        ? JSON.stringify(rawApiResponse || chatData, null, 2)
-        : markdown;
+      const content =
+        showJsonViewer && (rawApiResponse || chatData) ? JSON.stringify(rawApiResponse || chatData, null, 2) : markdown;
       await navigator.clipboard.writeText(content);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -713,9 +755,7 @@ messages: ${data.messages.length}
     const ext = isJson ? 'json' : 'md';
     const filename = `${title.replace(/[/\\:*?"<>|]/g, '-').slice(0, 50)}-${dateStr}.${ext}`;
 
-    const content = isJson
-      ? JSON.stringify(rawApiResponse || chatData, null, 2)
-      : markdown;
+    const content = isJson ? JSON.stringify(rawApiResponse || chatData, null, 2) : markdown;
     const mimeType = isJson ? 'application/json;charset=utf-8' : 'text/markdown;charset=utf-8';
 
     const blob = new Blob([content], { type: mimeType });
@@ -738,7 +778,6 @@ messages: ${data.messages.length}
     }
   };
 
-  const platformName = platformInfo ? PLATFORM_NAMES[platformInfo.platform] : '';
   const isAiEnabled = !!platformInfo;
 
   if (!open) return null;
@@ -847,201 +886,215 @@ messages: ${data.messages.length}
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
           {/* Content area */}
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'auto' }}>
-          {showMeta ? (
-            /* Meta 信息面板 - 独占模式 */
-            <div
-              style={{
-                flex: 1,
-                padding: '20px',
-                backgroundColor: '#fafafa',
-              }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-              <label style={{ width: '40px', fontSize: '12px', color: '#666', flexShrink: 0 }}>标题</label>
-              <input
-                type="text"
-                value={parsed.frontmatter.title || ''}
-                onChange={e => updateFrontmatterField('title', e.target.value)}
+            {showMeta ? (
+              /* Meta 信息面板 - 独占模式 */
+              <div
                 style={{
                   flex: 1,
-                  padding: '6px 10px',
-                  borderRadius: '6px',
-                  border: '1px solid #D5D3CB',
-                  backgroundColor: '#fff',
-                  color: '#181818',
-                  fontSize: '12px',
-                  outline: 'none',
-                }}
-              />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <label style={{ width: '40px', fontSize: '12px', color: '#666', flexShrink: 0 }}>来源</label>
-              <input
-                type="text"
-                value={parsed.frontmatter.source || ''}
-                onChange={e => updateFrontmatterField('source', e.target.value)}
-                style={{
-                  flex: 1,
-                  padding: '6px 10px',
-                  borderRadius: '6px',
-                  border: '1px solid #D5D3CB',
-                  backgroundColor: '#fff',
-                  color: '#181818',
-                  fontSize: '12px',
-                  outline: 'none',
-                }}
-              />
-            </div>
-              {markdownData?.presetName && (
-                <div style={{ marginTop: '8px' }}>
-                  <span
+                  padding: '20px',
+                  backgroundColor: '#fafafa',
+                }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <label style={{ width: '40px', fontSize: '12px', color: '#666', flexShrink: 0 }}>标题</label>
+                  <input
+                    type="text"
+                    value={parsed.frontmatter.title || ''}
+                    onChange={e => updateFrontmatterField('title', e.target.value)}
                     style={{
-                      backgroundColor: 'rgba(204, 120, 92, 0.1)',
-                      color: '#CC785C',
-                      borderRadius: '4px',
-                      padding: '2px 8px',
-                      fontSize: '11px',
-                    }}>
-                    {markdownData.presetName}
-                  </span>
+                      flex: 1,
+                      padding: '6px 10px',
+                      borderRadius: '6px',
+                      border: '1px solid #D5D3CB',
+                      backgroundColor: '#fff',
+                      color: '#181818',
+                      fontSize: '12px',
+                      outline: 'none',
+                    }}
+                  />
                 </div>
-              )}
-            </div>
-          ) : (
-            /* Tabs + Content 正常模式 */
-            <>
-              {/* Tabs */}
-              <div style={{ display: 'flex', gap: '4px', padding: '0 20px', borderBottom: '1px solid #D5D3CB' }}>
-                <button
-                  onClick={() => isAiEnabled && setActiveTab('ai')}
-                  disabled={!isAiEnabled}
-                  style={{
-                    padding: '8px 16px',
-                    fontSize: '13px',
-                    fontWeight: 500,
-                    border: 'none',
-                    borderRadius: '8px 8px 0 0',
-                    backgroundColor: activeTab === 'ai' ? '#fff' : 'transparent',
-                    color: !isAiEnabled ? '#aaa' : activeTab === 'ai' ? '#CC785C' : '#666',
-                    cursor: isAiEnabled ? 'pointer' : 'not-allowed',
-                    borderBottom: activeTab === 'ai' ? '2px solid #CC785C' : '2px solid transparent',
-                    marginBottom: '-1px',
-                    opacity: isAiEnabled ? 1 : 0.5,
-                  }}>
-                  AI 对话导出
-                  {!isAiEnabled && <span style={{ marginLeft: '4px', fontSize: '11px', color: '#999' }}>(不可用)</span>}
-                </button>
-                <button
-                  onClick={() => setActiveTab('clipboard')}
-                  style={{
-                    padding: '8px 16px',
-                    fontSize: '13px',
-                    fontWeight: 500,
-                    border: 'none',
-                    borderRadius: '8px 8px 0 0',
-                    backgroundColor: activeTab === 'clipboard' ? '#fff' : 'transparent',
-                    color: activeTab === 'clipboard' ? '#CC785C' : '#666',
-                    cursor: 'pointer',
-                    borderBottom: activeTab === 'clipboard' ? '2px solid #CC785C' : '2px solid transparent',
-                    marginBottom: '-1px',
-                  }}>
-                  剪贴板导出
-                </button>
-              </div>
-
-              {/* 主内容区 */}
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  flex: 1,
-                  minHeight: 0,
-                  overflow: 'hidden',
-                }}>
-          {/* Content Editor 或 JSON Viewer */}
-          {showJsonViewer && (rawApiResponse || chatData) ? (
-              <div
-                style={{
-                  flex: 1,
-                  minHeight: '180px',
-                  padding: '12px 20px',
-                  backgroundColor: '#f6f8fa',
-                  overflow: 'auto',
-                }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '11px', color: '#666', fontWeight: 500 }}>
-                    {rawApiResponse ? '原始 API 响应' : '解析后数据（缓存）'}
-                  </span>
-                  <button
-                    onClick={() => setShowJsonViewer(false)}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <label style={{ width: '40px', fontSize: '12px', color: '#666', flexShrink: 0 }}>来源</label>
+                  <input
+                    type="text"
+                    value={parsed.frontmatter.source || ''}
+                    onChange={e => updateFrontmatterField('source', e.target.value)}
                     style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      color: '#666',
-                      padding: '2px 6px',
-                      fontSize: '11px',
-                    }}>
-                    切换到 Markdown
-                  </button>
+                      flex: 1,
+                      padding: '6px 10px',
+                      borderRadius: '6px',
+                      border: '1px solid #D5D3CB',
+                      backgroundColor: '#fff',
+                      color: '#181818',
+                      fontSize: '12px',
+                      outline: 'none',
+                    }}
+                  />
                 </div>
-                <div
-                  style={{
-                    fontSize: '11px',
-                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                    lineHeight: 1.5,
-                  }}>
-                  <JsonNode data={rawApiResponse || chatData} />
-                </div>
-              </div>
-            ) : (
-              <div
-                style={{
-                  flex: 1,
-                  minHeight: '180px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  backgroundColor: '#f5f5f5',
-                  overflow: 'hidden',
-                }}>
-                {/* Header with toggle button */}
-                {chatData && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 20px 0' }}>
-                    <span style={{ fontSize: '11px', color: '#666', fontWeight: 500 }}>Markdown</span>
-                    <button
-                      onClick={() => setShowJsonViewer(true)}
+                {markdownData?.presetName && (
+                  <div style={{ marginTop: '8px' }}>
+                    <span
                       style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: '#666',
-                        padding: '2px 6px',
+                        backgroundColor: 'rgba(204, 120, 92, 0.1)',
+                        color: '#CC785C',
+                        borderRadius: '4px',
+                        padding: '2px 8px',
                         fontSize: '11px',
                       }}>
-                      切换到 JSON
-                    </button>
+                      {markdownData.presetName}
+                    </span>
                   </div>
                 )}
-                <textarea
-                  value={parsed.content}
-                  onChange={e => updateContent(e.target.value)}
-                  placeholder="内容..."
+              </div>
+            ) : (
+              /* Tabs + Content 正常模式 */
+              <>
+                {/* Tabs */}
+                <div style={{ display: 'flex', gap: '4px', padding: '0 20px', borderBottom: '1px solid #D5D3CB' }}>
+                  <button
+                    onClick={() => isAiEnabled && setActiveTab('ai')}
+                    disabled={!isAiEnabled}
+                    style={{
+                      padding: '8px 16px',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      border: 'none',
+                      borderRadius: '8px 8px 0 0',
+                      backgroundColor: activeTab === 'ai' ? '#fff' : 'transparent',
+                      color: !isAiEnabled ? '#aaa' : activeTab === 'ai' ? '#CC785C' : '#666',
+                      cursor: isAiEnabled ? 'pointer' : 'not-allowed',
+                      borderBottom: activeTab === 'ai' ? '2px solid #CC785C' : '2px solid transparent',
+                      marginBottom: '-1px',
+                      opacity: isAiEnabled ? 1 : 0.5,
+                    }}>
+                    AI 对话导出
+                    {!isAiEnabled && (
+                      <span style={{ marginLeft: '4px', fontSize: '11px', color: '#999' }}>(不可用)</span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('clipboard')}
+                    style={{
+                      padding: '8px 16px',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      border: 'none',
+                      borderRadius: '8px 8px 0 0',
+                      backgroundColor: activeTab === 'clipboard' ? '#fff' : 'transparent',
+                      color: activeTab === 'clipboard' ? '#CC785C' : '#666',
+                      cursor: 'pointer',
+                      borderBottom: activeTab === 'clipboard' ? '2px solid #CC785C' : '2px solid transparent',
+                      marginBottom: '-1px',
+                    }}>
+                    剪贴板导出
+                  </button>
+                </div>
+
+                {/* 主内容区 */}
+                <div
                   style={{
+                    display: 'flex',
+                    flexDirection: 'column',
                     flex: 1,
-                    padding: chatData ? '8px 20px 12px' : '12px 20px',
-                    border: 'none',
-                    backgroundColor: 'transparent',
-                    color: '#181818',
-                    fontSize: '12px',
-                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                    resize: 'none',
-                    outline: 'none',
-                  }}
-                />
-              </div>
-          )}
-              </div>
-            </>
-          )}
+                    minHeight: 0,
+                    overflow: 'hidden',
+                  }}>
+                  {/* Content Editor 或 JSON Viewer */}
+                  {showJsonViewer && (rawApiResponse || chatData) ? (
+                    <div
+                      style={{
+                        flex: 1,
+                        minHeight: '180px',
+                        padding: '12px 20px',
+                        backgroundColor: '#f6f8fa',
+                        overflow: 'auto',
+                      }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginBottom: '8px',
+                        }}>
+                        <span style={{ fontSize: '11px', color: '#666', fontWeight: 500 }}>
+                          {rawApiResponse ? '原始 API 响应' : '解析后数据（缓存）'}
+                        </span>
+                        <button
+                          onClick={() => setShowJsonViewer(false)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#666',
+                            padding: '2px 6px',
+                            fontSize: '11px',
+                          }}>
+                          切换到 Markdown
+                        </button>
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '11px',
+                          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                          lineHeight: 1.5,
+                        }}>
+                        <JsonNode data={rawApiResponse || chatData} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        flex: 1,
+                        minHeight: '180px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        backgroundColor: '#f5f5f5',
+                        overflow: 'hidden',
+                      }}>
+                      {/* Header with toggle button */}
+                      {chatData && (
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '8px 20px 0',
+                          }}>
+                          <span style={{ fontSize: '11px', color: '#666', fontWeight: 500 }}>Markdown</span>
+                          <button
+                            onClick={() => setShowJsonViewer(true)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              color: '#666',
+                              padding: '2px 6px',
+                              fontSize: '11px',
+                            }}>
+                            切换到 JSON
+                          </button>
+                        </div>
+                      )}
+                      <textarea
+                        value={parsed.content}
+                        onChange={e => updateContent(e.target.value)}
+                        placeholder="内容..."
+                        style={{
+                          flex: 1,
+                          padding: chatData ? '8px 20px 12px' : '12px 20px',
+                          border: 'none',
+                          backgroundColor: 'transparent',
+                          color: '#181818',
+                          fontSize: '12px',
+                          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                          resize: 'none',
+                          outline: 'none',
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Footer: 统一操作按钮 */}
@@ -1142,26 +1195,26 @@ messages: ${data.messages.length}
                       minWidth: '140px',
                       zIndex: 10,
                     }}>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex cursor-pointer items-center gap-2">
                       <Switch
                         checked={aiOptions.includeThinking}
                         onCheckedChange={checked => updateAiOption('includeThinking', checked)}
                       />
-                      <span className="text-xs text-foreground">thinking</span>
+                      <span className="text-foreground text-xs">thinking</span>
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex cursor-pointer items-center gap-2">
                       <Switch
                         checked={aiOptions.includeToolCalls}
                         onCheckedChange={checked => updateAiOption('includeToolCalls', checked)}
                       />
-                      <span className="text-xs text-foreground">tool calls</span>
+                      <span className="text-foreground text-xs">tool calls</span>
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex cursor-pointer items-center gap-2">
                       <Switch
                         checked={aiOptions.textOnly}
                         onCheckedChange={checked => updateAiOption('textOnly', checked)}
                       />
-                      <span className="text-xs text-foreground">仅文本</span>
+                      <span className="text-foreground text-xs">仅文本</span>
                     </label>
                   </div>
                 )}
@@ -1227,6 +1280,7 @@ messages: ${data.messages.length}
           </div>
 
           {/* Resize handles */}
+          {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
           <div
             onMouseDown={e => handleResizeStart(e, 'e')}
             style={{
@@ -1238,6 +1292,7 @@ messages: ${data.messages.length}
               cursor: 'ew-resize',
             }}
           />
+          {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
           <div
             onMouseDown={e => handleResizeStart(e, 's')}
             style={{
@@ -1249,6 +1304,7 @@ messages: ${data.messages.length}
               cursor: 'ns-resize',
             }}
           />
+          {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
           <div
             onMouseDown={e => handleResizeStart(e, 'se')}
             style={{
