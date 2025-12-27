@@ -890,7 +890,7 @@ if (document.readyState === 'loading') {
 // 监听 Shift+Cmd+P / Shift+Ctrl+P 快捷键打开导出弹窗
 document.addEventListener('keydown', (e: KeyboardEvent) => {
   // Shift+Cmd+P (Mac) 或 Shift+Ctrl+P (Windows/Linux)
-  if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'p') {
+  if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'p') {
     // 检查是否在输入框中
     const activeEl = document.activeElement;
     if (

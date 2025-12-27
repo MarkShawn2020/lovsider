@@ -375,6 +375,19 @@ export const UnifiedExportDialog = () => {
     }
   };
 
+  // ESC 键关闭弹窗
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeDialog();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [open]);
+
   // 监听消息
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
