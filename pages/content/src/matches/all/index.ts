@@ -887,20 +887,34 @@ if (document.readyState === 'loading') {
   }, 500);
 }
 
-// 监听 Shift+Cmd+P / Shift+Ctrl+P 快捷键打开导出弹窗
+// 监听快捷键
 document.addEventListener('keydown', (e: KeyboardEvent) => {
+  // 检查是否在输入框中
+  const activeEl = document.activeElement;
+  const isInInput =
+    activeEl instanceof HTMLInputElement ||
+    activeEl instanceof HTMLTextAreaElement ||
+    (activeEl instanceof HTMLElement && activeEl.isContentEditable);
+
+  // Alt+P: 智能选择 / Shift+Alt+P: 手动选择
+  // 注意：Mac 上 Option+P 会输出 π，所以必须用 e.code 而不是 e.key
+  if (e.altKey && e.code === 'KeyP' && !e.metaKey && !e.ctrlKey) {
+    if (isInInput) return;
+    e.preventDefault();
+    console.log('[DEBUG][Content] Alt+P detected, shiftKey:', e.shiftKey);
+    if (e.shiftKey) {
+      console.log('[DEBUG][Content] calling startSelection');
+      selector.startSelection();
+    } else {
+      console.log('[DEBUG][Content] calling smartSelect');
+      selector.smartSelect();
+    }
+    return;
+  }
+
   // Shift+Cmd+P (Mac) 或 Shift+Ctrl+P (Windows/Linux)
   if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'p') {
-    // 检查是否在输入框中
-    const activeEl = document.activeElement;
-    if (
-      activeEl instanceof HTMLInputElement ||
-      activeEl instanceof HTMLTextAreaElement ||
-      (activeEl instanceof HTMLElement && activeEl.isContentEditable)
-    ) {
-      return; // 不阻止输入框中的快捷键
-    }
-
+    if (isInInput) return;
     e.preventDefault();
 
     console.log('[Lovsider] Shift+Cmd+P 打开统一导出弹窗');
