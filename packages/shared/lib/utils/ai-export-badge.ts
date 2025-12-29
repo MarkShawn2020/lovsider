@@ -4,7 +4,7 @@
  */
 
 // AI 平台类型
-type AIPlatform = 'claude' | 'google-ai-studio';
+type AIPlatform = 'claude' | 'google-ai-studio' | 'gmail';
 
 interface PlatformInfo {
   platform: AIPlatform;
@@ -48,6 +48,12 @@ export class AIExportBadge {
     const googleMatch = url.match(/^https:\/\/aistudio\.google\.com\/prompts\/([a-zA-Z0-9_-]+)/);
     if (googleMatch) {
       return { platform: 'google-ai-studio', id: googleMatch[1], name: 'AI Studio' };
+    }
+
+    // 匹配 mail.google.com/mail/u/{accountIndex}/#inbox/{threadId} 或类似 URL
+    const gmailMatch = url.match(/^https:\/\/mail\.google\.com\/mail\/u\/(\d+)\/#[^/]+\/([a-zA-Z0-9_-]+)/);
+    if (gmailMatch) {
+      return { platform: 'gmail', id: gmailMatch[2], name: 'Gmail' };
     }
 
     return null;

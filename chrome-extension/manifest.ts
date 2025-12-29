@@ -50,13 +50,13 @@ const manifest = {
   },
   action: {
     default_popup: 'popup/index.html',
-    default_icon: 'icon-34.png',
+    default_icon: 'icon-32.png',
     default_title: '打开 Lovsider',
   },
   icons: {
-    '16': 'icon-34.png',
-    '32': 'icon-34.png',
-    '48': 'icon-34.png',
+    '16': 'icon-16.png',
+    '32': 'icon-32.png',
+    '48': 'icon-48.png',
     '128': 'icon-128.png',
   },
   content_scripts: [
@@ -67,9 +67,16 @@ const manifest = {
     },
     {
       // lovinsp 清理脚本 - 必须在 document_start 运行，移除第三方页面的 lovinsp-component
-      matches: ['https://claude.ai/*', 'https://aistudio.google.com/*'],
+      matches: ['https://claude.ai/*', 'https://aistudio.google.com/*', 'https://mail.google.com/*'],
       js: ['lovinsp-cleanup.js'],
       run_at: 'document_start',
+    },
+    {
+      // Gmail API hook - 必须在 document_start 运行，在 CSP 生效前注入
+      matches: ['https://mail.google.com/*'],
+      js: ['gmail-hook-inject.js'],
+      run_at: 'document_start',
+      world: 'MAIN',
     },
     {
       matches: ['http://*/*', 'https://*/*'],
@@ -78,7 +85,17 @@ const manifest = {
   ],
   web_accessible_resources: [
     {
-      resources: ['*.js', '*.css', '*.svg', 'icon-128.png', 'icon-34.png', 'auth-setup.html', 'offscreen.html'],
+      resources: [
+        '*.js',
+        '*.css',
+        '*.svg',
+        'icon-*.png',
+        'logo.png',
+        'favicon.ico',
+        'auth-setup.html',
+        'offscreen.html',
+        'gmail-hook.js',
+      ],
       matches: ['*://*/*'],
     },
   ],

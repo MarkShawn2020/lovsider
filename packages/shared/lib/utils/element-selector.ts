@@ -42,6 +42,8 @@ export class ElementSelector {
   private lastVisitedChild = new WeakMap<Element, Element>();
   // 记录最后匹配的预设信息
   private lastPresetMatch: PresetMatchInfo | null = null;
+  // 标题标签元素
+  private titleLabel: HTMLElement | null = null;
 
   private mouseOverHandler?: (e: MouseEvent) => void;
   private mouseOutHandler?: (e: MouseEvent) => void;
@@ -280,13 +282,10 @@ export class ElementSelector {
       this.startExitDetection();
     }
 
-    // 保持高亮并发送初始数据
-    this.highlightSelectedElement();
+    // 保持高亮并发送初始数据（带导航提示）
+    const navTip = this.options.showStatusMessages ? '方向键导航，回车/ESC退出' : undefined;
+    this.highlightSelectedElement(navTip);
     this.sendElementDataWithDebounce();
-
-    if (this.options.showStatusMessages) {
-      this.showStatusMessage('使用方向键导航元素，回车/ESC退出');
-    }
   }
 
   private handleNavigationKeyDown(e: KeyboardEvent): void {
@@ -334,7 +333,8 @@ export class ElementSelector {
 
     if (newElement && newElement !== document.body && newElement !== document.documentElement) {
       this.selectedElement = newElement;
-      this.highlightSelectedElement();
+      const navTip = this.options.showStatusMessages ? '方向键导航，回车/ESC退出' : undefined;
+      this.highlightSelectedElement(navTip);
       this.sendElementDataWithDebounce();
     }
   }
@@ -360,6 +360,12 @@ export class ElementSelector {
       el.style.backgroundColor = styles.backgroundColor;
     });
     this.originalStyles.clear();
+
+    // 移除标题标签
+    if (this.titleLabel) {
+      this.titleLabel.remove();
+      this.titleLabel = null;
+    }
   }
 
   private sendElementDataWithDebounce(): void {
@@ -918,11 +924,74 @@ export class ElementSelector {
   }
 
   // 高亮选中的元素（用于外部调用）
-  public highlightSelectedElement(): void {
+  public highlightSelectedElement(tip?: string): void {
     this.removeHighlight();
     if (this.selectedElement) {
       this.highlightElement(this.selectedElement);
+      this.showTitleLabel(this.selectedElement, tip);
     }
+  }
+
+  // 显示标题标签（可带 tip 提示）
+  private showTitleLabel(element: Element, tip?: string): void {
+    // 移除已有的标签
+    if (this.titleLabel) {
+      this.titleLabel.remove();
+    }
+
+    // 优先使用预设名称，否则复用 markdownConverter 的标题提取逻辑
+    const title = this.lastPresetMatch?.presetName || this.markdownConverter.extractTitle(element);
+    const truncatedTitle = title.length > 30 ? title.substring(0, 30) + '...' : title;
+    const rect = element.getBoundingClientRect();
+    const gap = 8;
+
+    // 创建标签
+    this.titleLabel = document.createElement('div');
+    this.titleLabel.id = 'lovsider-title-label';
+
+    // 构建内容：有 tip 时显示两行，否则只显示标题
+    if (tip) {
+      this.titleLabel.innerHTML = `<div style="opacity:0.8;margin-bottom:2px">TIP: ${tip}</div><div>标题: ${truncatedTitle}</div>`;
+    } else {
+      this.titleLabel.textContent = truncatedTitle;
+    }
+
+    this.titleLabel.style.cssText = `
+      position: fixed;
+      background: ${this.options.highlightColor};
+      color: white;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      z-index: 10001;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 320px;
+      pointer-events: none;
+      line-height: 1.4;
+    `;
+
+    document.body.appendChild(this.titleLabel);
+
+    // 计算位置：优先外部右上角，其次内部右上角（fixed定位，相对视口）
+    const labelHeight = this.titleLabel.offsetHeight;
+    let top: number;
+    let right: number;
+
+    // 检查顶部是否有足够空间（外部）
+    if (rect.top > labelHeight + gap) {
+      top = rect.top - labelHeight - gap;
+    } else {
+      top = rect.top + gap;
+    }
+
+    // 右对齐
+    right = window.innerWidth - rect.right;
+    if (right < 0) right = gap;
+
+    this.titleLabel.style.top = `${top}px`;
+    this.titleLabel.style.right = `${right}px`;
   }
 
   // 触发元素选中事件（用于外部调用）

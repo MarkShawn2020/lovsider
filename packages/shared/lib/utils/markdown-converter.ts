@@ -86,7 +86,7 @@ datetime: ${datetime}
 `;
   }
 
-  private extractTitle(element?: Element): string {
+  public extractTitle(element?: Element): string {
     // 1. 优先从选中的元素中提取标题
     if (element) {
       const titleFromElement = this.extractTitleFromElement(element);

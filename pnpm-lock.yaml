@@ -20,6 +20,9 @@ importers:
       react-dom:
         specifier: ^19.1.0
         version: 19.1.0(react@19.1.0)
+      turndown:
+        specifier: ^7.2.0
+        version: 7.2.0
       turndown-plugin-gfm:
         specifier: ^1.0.2
         version: 1.0.2
@@ -389,6 +392,9 @@ importers:
       '@extension/storage':
         specifier: workspace:*
         version: link:../../packages/storage
+      turndown:
+        specifier: ^7.2.0
+        version: 7.2.0
     devDependencies:
       '@extension/hmr':
         specifier: workspace:*
@@ -399,6 +405,9 @@ importers:
       '@extension/vite-config':
         specifier: workspace:*
         version: link:../../packages/vite-config
+      '@types/turndown':
+        specifier: ^5.0.5
+        version: 5.0.5
 
   pages/content-runtime:
     dependencies:
