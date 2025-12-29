@@ -5,7 +5,7 @@ import { claudeExportStorage } from '@extension/storage';
 import type { ClaudeExportOptions } from '@extension/storage';
 
 // 支持的 AI 平台
-export type AIPlatform = 'claude' | 'google-ai-studio';
+export type AIPlatform = 'claude' | 'google-ai-studio' | 'gmail';
 
 // 统一的消息格式
 export interface UnifiedMessage {
@@ -63,6 +63,7 @@ type GoogleAIStudioResponse = unknown[][];
 export const PLATFORM_NAMES: Record<AIPlatform, string> = {
   claude: 'Claude AI',
   'google-ai-studio': 'Google AI Studio',
+  gmail: 'Gmail',
 };
 
 // 解析 Google AI Studio 响应
@@ -222,6 +223,19 @@ export async function detectAIPlatform(): Promise<{ detection: PlatformDetection
       return { detection: { platform: 'google-ai-studio', id: promptId, title } };
     }
 
+    // 匹配 mail.google.com/mail/u/{accountIndex}/#inbox/{threadId} 或类似 URL
+    // 格式: #inbox/xxx, #label/xxx/yyy, #sent/xxx, #all/xxx 等
+    const gmailMatch = tab.url.match(/^https:\/\/mail\.google\.com\/mail\/u\/(\d+)\/#[^/]+\/([a-zA-Z0-9_-]+)/);
+    if (gmailMatch) {
+      const threadId = gmailMatch[2];
+      const title =
+        tab.title
+          ?.replace(' - Gmail', '')
+          .replace(/ - .+@.+$/, '')
+          .trim() || '邮件线程';
+      return { detection: { platform: 'gmail', id: threadId, title } };
+    }
+
     return null;
   } catch (err) {
     console.error('[Lovsider] 检测 AI 平台失败:', err);
@@ -263,7 +277,61 @@ export async function fetchAIChatData(detection: PlatformDetection, orgId?: stri
     return parseGoogleAIStudioResponse(response.data, tab.url);
   }
 
+  if (detection.platform === 'gmail') {
+    const response = await chrome.tabs.sendMessage(tab.id, {
+      action: 'fetchGmailThread',
+      threadId: detection.id,
+    });
+
+    if (!response.success) {
+      throw new Error(response.error || '获取邮件数据失败');
+    }
+
+    return parseGmailResponse(response.data, tab.url);
+  }
+
   throw new Error('不支持的平台');
+}
+
+// Gmail 邮件项接口
+interface GmailMessage {
+  from: string;
+  to: string;
+  subject: string;
+  date: string;
+  body: string;
+}
+
+// 解析 Gmail 响应
+function parseGmailResponse(data: GmailMessage[], url: string): UnifiedChatData {
+  const messages: UnifiedMessage[] = [];
+
+  for (const email of data) {
+    // 每封邮件作为一条消息，包含完整的邮件头信息
+    const header = [
+      email.from ? `**From:** ${email.from}` : '',
+      email.to ? `**To:** ${email.to}` : '',
+      email.subject ? `**Subject:** ${email.subject}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    messages.push({
+      role: 'human',
+      text: header ? `${header}\n\n---\n\n${email.body}` : email.body,
+    });
+  }
+
+  const title = data.length > 0 ? data[0].subject || '邮件线程' : '邮件线程';
+
+  return {
+    platform: 'gmail',
+    id: url.split('/').pop() || '',
+    title,
+    messages,
+    sourceUrl: url,
+    exportedAt: new Date().toISOString(),
+  };
 }
 
 // 转换为 Markdown
@@ -331,12 +399,18 @@ export async function parseAIPlatformContent(): Promise<{
   const options = await claudeExportStorage.getOptions();
   const markdown = convertChatToMarkdown(chatData, options);
 
+  const patternMap: Record<AIPlatform, string> = {
+    claude: 'claude.ai/chat',
+    'google-ai-studio': 'aistudio.google.com/prompts',
+    gmail: 'mail.google.com/mail',
+  };
+
   return {
     markdown,
     presetMatch: {
       presetId: detection.platform,
       presetName: PLATFORM_NAMES[detection.platform],
-      matchedPattern: detection.platform === 'claude' ? 'claude.ai/chat' : 'aistudio.google.com/prompts',
+      matchedPattern: patternMap[detection.platform],
     },
   };
 }

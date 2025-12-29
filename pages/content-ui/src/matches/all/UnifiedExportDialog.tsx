@@ -6,7 +6,7 @@ import type { ClaudeExportOptions } from '@extension/storage';
 
 // 平台信息
 interface PlatformInfo {
-  platform: 'claude' | 'google-ai-studio';
+  platform: 'claude' | 'google-ai-studio' | 'gmail';
   id: string;
   name: string;
 }
@@ -47,6 +47,7 @@ type TabType = 'ai' | 'clipboard';
 const PLATFORM_NAMES: Record<string, string> = {
   claude: 'Claude',
   'google-ai-studio': 'Google AI Studio',
+  gmail: 'Gmail',
 };
 
 // 可折叠 JSON 查看器组件
@@ -350,6 +351,11 @@ export const UnifiedExportDialog = () => {
     if (googleMatch) {
       return { platform: 'google-ai-studio', id: googleMatch[1], name: 'AI Studio' };
     }
+    // Gmail 匹配
+    const gmailMatch = url.match(/^https:\/\/mail\.google\.com\/mail\/u\/(\d+)\/#[^/]+\/([a-zA-Z0-9_-]+)/);
+    if (gmailMatch) {
+      return { platform: 'gmail', id: gmailMatch[2], name: 'Gmail' };
+    }
     return null;
   }, []);
 
@@ -491,7 +497,7 @@ export const UnifiedExportDialog = () => {
 
   // 获取聊天数据
   const fetchChatData = useCallback(async (): Promise<{ parsed: UnifiedChatData; raw: unknown } | null> => {
-    if (!platformInfo) throw new Error('未检测到 AI 平台');
+    if (!platformInfo) throw new Error('未检测到支持的平台');
 
     if (platformInfo.platform === 'claude') {
       let orgId: string | null = (await claudeExportStorage.getLastOrgId()) ?? null;
@@ -541,8 +547,64 @@ export const UnifiedExportDialog = () => {
       return { parsed: parseGoogleAIStudioResponse(rawData, window.location.href), raw: rawData };
     }
 
+    if (platformInfo.platform === 'gmail') {
+      // 通过 content script 获取 Gmail 线程数据
+      const response = await new Promise<{ success: boolean; data?: GmailMessage[]; error?: string }>(resolve => {
+        window.postMessage({ type: 'lovsider-fetch-gmail-thread', threadId: platformInfo.id }, '*');
+        const handler = (event: MessageEvent) => {
+          if (event.data?.type === 'lovsider-gmail-thread-response') {
+            window.removeEventListener('message', handler);
+            resolve(event.data);
+          }
+        };
+        window.addEventListener('message', handler);
+        // 超时处理
+        setTimeout(() => {
+          window.removeEventListener('message', handler);
+          resolve({ success: false, error: '获取超时' });
+        }, 15000);
+      });
+
+      if (!response.success || !response.data) {
+        throw new Error(response.error || '获取邮件数据失败');
+      }
+
+      return { parsed: parseGmailResponse(response.data, window.location.href), raw: response.data };
+    }
+
     throw new Error('不支持的平台');
   }, [platformInfo]);
+
+  // Gmail 邮件解析
+  interface GmailMessage {
+    from: string;
+    to: string;
+    subject: string;
+    date: string;
+    body: string;
+  }
+
+  const parseGmailResponse = (data: GmailMessage[], url: string): UnifiedChatData => {
+    const messages: UnifiedMessage[] = [];
+
+    for (const email of data) {
+      messages.push({
+        role: 'human',
+        text: `**From:** ${email.from}\n**To:** ${email.to}\n**Date:** ${email.date}\n**Subject:** ${email.subject}\n\n${email.body}`,
+      });
+    }
+
+    const title = data.length > 0 ? data[0].subject || '邮件线程' : '邮件线程';
+
+    return {
+      platform: 'gmail',
+      id: url.split('/').pop() || '',
+      title,
+      messages,
+      sourceUrl: url,
+      exportedAt: new Date().toISOString(),
+    };
+  };
 
   // 解析 Claude 响应
   const parseClaudeResponse = (data: any, url: string): UnifiedChatData => {
@@ -1049,7 +1111,7 @@ messages: ${data.messages.length}
                       marginBottom: '-1px',
                       opacity: isAiEnabled ? 1 : 0.5,
                     }}>
-                    AI 对话导出
+                    智能导出{platformInfo ? `（${platformInfo.name}）` : ''}
                     {!isAiEnabled && (
                       <span style={{ marginLeft: '4px', fontSize: '11px', color: '#999' }}>(不可用)</span>
                     )}
@@ -1071,6 +1133,20 @@ messages: ${data.messages.length}
                     剪贴板导出
                   </button>
                 </div>
+
+                {/* 支持平台说明 */}
+                {activeTab === 'ai' && (
+                  <div
+                    style={{
+                      padding: '8px 20px',
+                      fontSize: '11px',
+                      color: '#888',
+                      backgroundColor: '#fafafa',
+                      borderBottom: '1px solid #eee',
+                    }}>
+                    目前支持：Claude · Google AI Studio · Gmail
+                  </div>
+                )}
 
                 {/* 主内容区 */}
                 <div

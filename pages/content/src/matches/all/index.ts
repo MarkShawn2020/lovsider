@@ -8,6 +8,7 @@ import {
   AIExportBadge,
   safeSendMessage,
 } from '@extension/shared';
+import TurndownService from 'turndown';
 import type { FormFillRequest, SitePreset, FloatingBadgeConfig } from '@extension/shared';
 
 console.debug('[Lovsider] Content script loaded');
@@ -82,6 +83,13 @@ const BUILT_IN_PRESETS: SitePreset[] = [
     name: 'Google AI Studio',
     patterns: ['aistudio.google.com/prompts'],
     selectors: ['[data-turn-role]', '.response-container', 'ms-chat-turn'],
+    priority: 15,
+  },
+  {
+    id: 'gmail',
+    name: 'Gmail',
+    patterns: ['mail.google.com/mail'],
+    selectors: ['.gs', '.a3s', '[data-legacy-thread-id]'],
     priority: 15,
   },
 ];
@@ -740,6 +748,25 @@ chrome.runtime?.onMessage?.addListener(
         });
 
       return true; // 保持消息通道开放
+    } else if (msg.action === 'fetchGmailThread') {
+      // 从 Gmail API 获取邮件线程数据
+      const { threadId } = msg as { threadId?: string };
+
+      if (!threadId) {
+        sendResponse({ success: false, error: '缺少 threadId' });
+        return false;
+      }
+
+      fetchGmailThreadData(threadId)
+        .then(data => {
+          sendResponse({ success: true, data });
+        })
+        .catch(error => {
+          console.error('获取 Gmail 邮件数据失败:', error);
+          sendResponse({ success: false, error: error instanceof Error ? error.message : '获取失败' });
+        });
+
+      return true; // 保持消息通道开放
     } else if (msg.action === 'openMarkdownExport') {
       // 打开统一导出弹窗（剪贴板模式）
       console.log('[Lovsider] 收到 openMarkdownExport 消息', msg.data);
@@ -873,6 +900,26 @@ function initializeAIExportBadge() {
   }
 }
 
+// 监听来自 content-ui 的 postMessage（用于 Gmail 数据获取）
+window.addEventListener('message', async event => {
+  if (event.data?.type === 'lovsider-fetch-gmail-thread') {
+    const { threadId } = event.data;
+    try {
+      const data = await fetchGmailThreadData(threadId);
+      window.postMessage({ type: 'lovsider-gmail-thread-response', success: true, data }, '*');
+    } catch (error) {
+      window.postMessage(
+        {
+          type: 'lovsider-gmail-thread-response',
+          success: false,
+          error: error instanceof Error ? error.message : '获取失败',
+        },
+        '*',
+      );
+    }
+  }
+});
+
 // 页面加载完成后初始化
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
@@ -958,3 +1005,279 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
       });
   }
 });
+
+// Gmail 线程数据获取
+interface GmailMessage {
+  from: string;
+  to: string;
+  subject: string;
+  date: string;
+  body: string;
+}
+
+// Gmail API 响应缓存 - 只缓存 c=0 的线程请求
+interface GmailCacheEntry {
+  data: unknown;
+  url: string;
+  timestamp: number;
+  pageUrl: string; // 记录当时的页面 URL
+  requestedThreadId: string | null; // 请求的线程 ID (数字格式)
+}
+const gmailApiCache: GmailCacheEntry[] = [];
+let lastGmailPageUrl = '';
+
+async function fetchGmailThreadData(threadId: string): Promise<GmailMessage[]> {
+  // hook 已通过 manifest 在 document_start 时注入
+  const currentPageUrl = window.location.href;
+
+  // 如果页面 URL 变化（且之前有记录），清空缓存
+  if (lastGmailPageUrl && lastGmailPageUrl !== currentPageUrl) {
+    console.log('[Lovsider] Gmail 页面变化，清空缓存');
+    gmailApiCache.length = 0;
+  }
+  lastGmailPageUrl = currentPageUrl;
+
+  // 从缓存中查找有效的线程响应
+  const findBestCache = (): GmailCacheEntry | null => {
+    const now = Date.now();
+    // 过滤有效缓存（60秒内，同一页面，有线程 ID）
+    const validCache = gmailApiCache.filter(
+      c => now - c.timestamp < 60000 && c.pageUrl === currentPageUrl && c.requestedThreadId,
+    );
+
+    // 返回最新的
+    return validCache.length > 0 ? validCache[validCache.length - 1] : null;
+  };
+
+  // 1. 检查现有缓存
+  let cache = findBestCache();
+  if (cache) {
+    const parsed = parseGmailApiResponse(cache.data, cache.requestedThreadId);
+    if (parsed.length > 0) {
+      console.log('[Lovsider] 使用缓存的 Gmail 线程数据, threadId:', cache.requestedThreadId);
+      return parsed;
+    }
+  }
+
+  // 2. 等待新数据（最多等 3 秒）
+  for (let i = 0; i < 6; i++) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    cache = findBestCache();
+    if (cache) {
+      const parsed = parseGmailApiResponse(cache.data, cache.requestedThreadId);
+      if (parsed.length > 0) {
+        console.log('[Lovsider] 从 hook 获取到 Gmail 线程数据, threadId:', cache.requestedThreadId);
+        return parsed;
+      }
+    }
+  }
+
+  throw new Error('未能获取邮件数据，请刷新页面后重试');
+}
+
+// Gmail API hook 已通过 manifest 在 document_start 时注入到 MAIN world
+// 这里不需要再手动注入
+
+// 监听来自注入脚本的消息
+window.addEventListener('message', event => {
+  if (event.data?.type === 'lovsider-gmail-api-response') {
+    const pageUrl = window.location.href;
+    const requestedThreadId = event.data.requestedThreadId || null;
+    console.log('[Lovsider] 收到 Gmail 线程响应, threadId:', requestedThreadId);
+
+    gmailApiCache.push({
+      data: event.data.data,
+      url: event.data.url || '',
+      timestamp: Date.now(),
+      pageUrl: pageUrl,
+      requestedThreadId: requestedThreadId,
+    });
+
+    // 只保留最近 5 条
+    while (gmailApiCache.length > 5) {
+      gmailApiCache.shift();
+    }
+  }
+});
+
+// 解析 Gmail API 响应 - 只提取指定线程
+// 结构: [0, [["thread-f:xxx", null, [["msg-f:xxx", [sender, null, null, recipient, subject, body_data]], ...]], ...]]
+function parseGmailApiResponse(data: unknown, requestedThreadId: string | null): GmailMessage[] {
+  const messages: GmailMessage[] = [];
+
+  if (!Array.isArray(data) || !Array.isArray(data[1])) {
+    console.log('[Lovsider] Gmail API 数据格式不匹配');
+    return messages;
+  }
+
+  console.log('[Lovsider] 查找线程 ID:', requestedThreadId);
+
+  // data[1] 包含所有线程/消息
+  const threads = data[1] as unknown[];
+  console.log('[Lovsider] API 响应包含', threads.length, '个线程');
+
+  // 查找匹配的线程
+  let thread: unknown[] | null = null;
+  const targetId = requestedThreadId ? `thread-f:${requestedThreadId}` : null;
+
+  for (let i = 0; i < threads.length; i++) {
+    const t = threads[i] as unknown[];
+    if (Array.isArray(t) && t[0]) {
+      const threadId = t[0] as string;
+      if (targetId && threadId === targetId) {
+        console.log('[Lovsider] 找到匹配线程:', threadId);
+        thread = t;
+        break;
+      }
+    }
+  }
+
+  // 如果没找到匹配的，使用第一个（fallback）
+  if (!thread && threads.length > 0) {
+    thread = threads[0] as unknown[];
+    console.log('[Lovsider] 未找到匹配线程，使用第一个:', thread?.[0]);
+  }
+
+  if (!Array.isArray(thread) || thread.length < 3) {
+    console.log('[Lovsider] 线程数据格式不匹配');
+    return messages;
+  }
+
+  // thread[2] 包含该线程的所有消息
+  const msgList = thread[2] as unknown[];
+  if (!Array.isArray(msgList)) {
+    console.log('[Lovsider] 消息列表格式不匹配');
+    return messages;
+  }
+
+  for (const msg of msgList) {
+    if (!Array.isArray(msg) || msg.length < 2) continue;
+
+    const msgData = msg[1] as unknown[];
+    if (!Array.isArray(msgData) || msgData.length < 6) continue;
+
+    // 提取发件人: msgData[0] = [[1, "email"], ...] 或 [["name", "email"], ...]
+    const senderInfo = msgData[0] as unknown[];
+    let from = '';
+    if (Array.isArray(senderInfo) && senderInfo.length > 0) {
+      const firstSender = senderInfo[0] as unknown[];
+      if (Array.isArray(firstSender)) {
+        // 格式: [1, "email"] 或 ["name", "email"]
+        if (typeof firstSender[1] === 'string' && firstSender[1].includes('@')) {
+          from = firstSender[1];
+        } else if (typeof firstSender[0] === 'string' && firstSender[0].includes('@')) {
+          from = firstSender[0];
+        }
+      }
+    }
+
+    // 提取收件人: msgData[3]
+    const recipientInfo = msgData[3] as unknown[];
+    let to = '';
+    if (Array.isArray(recipientInfo) && recipientInfo.length > 0) {
+      const firstRecipient = recipientInfo[0] as unknown[];
+      if (Array.isArray(firstRecipient)) {
+        if (typeof firstRecipient[1] === 'string' && firstRecipient[1].includes('@')) {
+          to = firstRecipient[1];
+        }
+      }
+    }
+
+    // 提取主题: msgData[4]
+    const subject = typeof msgData[4] === 'string' ? msgData[4] : '';
+
+    // 提取正文: msgData[5][1][0][2][1] (基于发现的路径)
+    let body = '';
+    try {
+      const bodyData = msgData[5] as unknown[];
+      if (Array.isArray(bodyData) && Array.isArray(bodyData[1])) {
+        const parts = bodyData[1] as unknown[];
+        // 可能有多个 body parts
+        for (const part of parts) {
+          if (Array.isArray(part) && Array.isArray(part[2])) {
+            const htmlContent = part[2][1];
+            if (typeof htmlContent === 'string' && htmlContent.length > 0) {
+              body += htmlContent;
+            }
+          }
+        }
+      }
+    } catch {
+      // 忽略解析错误
+    }
+
+    if (body) {
+      // 将 HTML 转换为可读文本
+      const readableBody = htmlToReadableText(body);
+      messages.push({ from, to, subject, date: '', body: readableBody });
+    }
+  }
+
+  console.log('[Lovsider] 当前线程解析出', messages.length, '条邮件');
+  return messages;
+}
+
+// 将 HTML 转换为 Markdown (使用 Turndown)
+const turndownService = new TurndownService({
+  headingStyle: 'atx',
+  codeBlockStyle: 'fenced',
+  bulletListMarker: '-',
+});
+
+// 移除跟踪像素
+turndownService.addRule('removeTrackingImages', {
+  filter: (node: HTMLElement) => {
+    if (node.nodeName !== 'IMG') return false;
+    const src = node.getAttribute('src') || '';
+    return src.includes('tracking') || src.includes('pixel') || src.includes('.gif') || src.length < 10;
+  },
+  replacement: () => '',
+});
+
+// 统一处理所有链接：清理文本、处理图片链接
+turndownService.addRule('cleanLinks', {
+  filter: 'a',
+  replacement: (content: string, node: Node) => {
+    const el = node as HTMLElement;
+    const href = el.getAttribute('href') || '';
+    if (!href || href.startsWith('mailto:')) return content;
+
+    // 清理文本：移除换行，压缩空白
+    const cleanText = content.replace(/\s+/g, ' ').trim();
+
+    // 如果有文本，直接返回
+    if (cleanText) {
+      return `[${cleanText}](${href})`;
+    }
+
+    // 无文本：检查是否是图片链接，用域名替代
+    const imgs = el.querySelectorAll('img');
+    if (imgs.length > 0) {
+      try {
+        const url = new URL(href);
+        const domain = url.hostname.replace('www.', '');
+        return `[${domain}](${href}) `;
+      } catch {
+        return '';
+      }
+    }
+
+    return '';
+  },
+});
+
+function htmlToReadableText(html: string): string {
+  // 预处理：移除 style 和 script
+  const cleaned = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+
+  let markdown = turndownService.turndown(cleaned);
+
+  // 清理：移除空链接 [](url)
+  markdown = markdown.replace(/\[\s*\]\([^)]+\)/g, '');
+
+  // 清理多余空白
+  markdown = markdown.replace(/\n{3,}/g, '\n\n').trim();
+
+  return markdown;
+}
