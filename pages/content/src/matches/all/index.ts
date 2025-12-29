@@ -116,6 +116,17 @@ class LovsiderElementSelector extends ElementSelector {
         domPath: data.domPath,
         presetMatch: data.presetMatch,
       });
+
+      // Enter 确认后自动打开 UnifiedExportDialog
+      const platformInfo = AIExportBadge.detectPlatform();
+      window.postMessage(
+        {
+          type: 'lovsider-open-unified-export',
+          platformInfo,
+          markdownData: lastMarkdownData,
+        },
+        '*',
+      );
     }
 
     // 通知侧边栏导航模式已退出
