@@ -999,7 +999,9 @@ messages: ${data.messages.length}
                 style={{ width: '20px', height: '20px', flexShrink: 0 }}
               />
               <span style={{ fontSize: '15px', fontWeight: 600, color: '#181818' }}>Lovsider</span>
-              <span style={{ fontSize: '11px', color: '#999', fontWeight: 400 }}>v1.2.1</span>
+              <span style={{ fontSize: '11px', color: '#999', fontWeight: 400 }}>
+                v{chrome.runtime.getManifest().version}
+              </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <button
