@@ -1,5 +1,14 @@
 # @extension/devtools-panel
 
+## 1.4.0
+
+### Patch Changes
+
+- @extension/i18n@1.4.0
+- @extension/shared@1.4.0
+- @extension/storage@1.4.0
+- @extension/ui@1.4.0
+
 ## 1.3.2
 
 ### Patch Changes

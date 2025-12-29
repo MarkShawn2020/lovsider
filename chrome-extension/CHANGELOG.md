@@ -1,6 +1,12 @@
 # chrome-extension
 
-## 0.9.1
+## 1.5.0
+
+### Minor Changes
+
+- feat(ui): Enter 确认选区后自动打开导出弹窗
+
+## 0.9.2
 
 ### Patch Changes
 
