@@ -5,15 +5,19 @@ interface ExportDialogSize {
   height: number;
 }
 
+export type MarkdownViewMode = 'raw' | 'side-by-side' | 'preview';
+
 interface ExportLayoutState {
   dialogSize: ExportDialogSize;
+  viewMode: MarkdownViewMode;
 }
 
 const DEFAULT_SIZE: ExportDialogSize = { width: 520, height: 480 };
+const DEFAULT_VIEW_MODE: MarkdownViewMode = 'raw';
 
 const storage = createStorage<ExportLayoutState>(
   'export-layout-storage',
-  { dialogSize: DEFAULT_SIZE },
+  { dialogSize: DEFAULT_SIZE, viewMode: DEFAULT_VIEW_MODE },
   {
     storageEnum: StorageEnum.Local,
     liveUpdate: true,
@@ -23,9 +27,15 @@ const storage = createStorage<ExportLayoutState>(
 export const exportLayoutStorage = {
   ...storage,
   setDialogSize: async (size: ExportDialogSize) => {
-    await storage.set({ dialogSize: size });
+    const current = await storage.get();
+    await storage.set({ ...current, dialogSize: size });
+  },
+  setViewMode: async (mode: MarkdownViewMode) => {
+    const current = await storage.get();
+    await storage.set({ ...current, viewMode: mode });
   },
   resetDialogSize: async () => {
-    await storage.set({ dialogSize: DEFAULT_SIZE });
+    const current = await storage.get();
+    await storage.set({ ...current, dialogSize: DEFAULT_SIZE });
   },
 };

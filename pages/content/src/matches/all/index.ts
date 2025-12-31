@@ -1162,49 +1162,69 @@ function parseGmailApiResponse(data: unknown, requestedThreadId: string | null):
     return messages;
   }
 
-  for (const msg of msgList) {
+  for (let msgIdx = 0; msgIdx < msgList.length; msgIdx++) {
+    const msg = msgList[msgIdx];
     if (!Array.isArray(msg) || msg.length < 2) continue;
 
     const msgData = msg[1] as unknown[];
-    if (!Array.isArray(msgData) || msgData.length < 6) continue;
+    if (!Array.isArray(msgData)) continue;
 
-    // 提取发件人: msgData[0] = [[1, "email"], ...] 或 [["name", "email"], ...]
-    const senderInfo = msgData[0] as unknown[];
-    let from = '';
-    if (Array.isArray(senderInfo) && senderInfo.length > 0) {
-      const firstSender = senderInfo[0] as unknown[];
-      if (Array.isArray(firstSender)) {
-        // 格式: [1, "email"] 或 ["name", "email"]
-        if (typeof firstSender[1] === 'string' && firstSender[1].includes('@')) {
-          from = firstSender[1];
-        } else if (typeof firstSender[0] === 'string' && firstSender[0].includes('@')) {
-          from = firstSender[0];
+    // 提取发件人: 遍历查找包含 @ 的字符串
+    const findAllEmails = (data: unknown): string[] => {
+      const emails: string[] = [];
+      const search = (d: unknown) => {
+        if (typeof d === 'string' && d.includes('@') && !d.startsWith('<')) {
+          emails.push(d);
+        } else if (Array.isArray(d)) {
+          for (const item of d) search(item);
         }
-      }
+      };
+      search(data);
+      return emails;
+    };
+
+    // msgData[3] 是发件人信息
+    let from = '';
+    if (Array.isArray(msgData[3])) {
+      const emails = findAllEmails(msgData[3]);
+      if (emails.length > 0) from = emails[0];
     }
 
-    // 提取收件人: msgData[3]
-    const recipientInfo = msgData[3] as unknown[];
+    // msgData[0] 是收件人信息，msgData[2] 是 CC
     let to = '';
-    if (Array.isArray(recipientInfo) && recipientInfo.length > 0) {
-      const firstRecipient = recipientInfo[0] as unknown[];
-      if (Array.isArray(firstRecipient)) {
-        if (typeof firstRecipient[1] === 'string' && firstRecipient[1].includes('@')) {
-          to = firstRecipient[1];
-        }
-      }
+    if (Array.isArray(msgData[0])) {
+      const emails = findAllEmails(msgData[0]);
+      // 找一个不同于 from 的邮箱
+      to = emails.find(e => e !== from) || emails[0] || '';
+    }
+    // 如果 to 仍为空，尝试从 msgData[2] (CC) 查找
+    if (!to && Array.isArray(msgData[2])) {
+      const emails = findAllEmails(msgData[2]);
+      to = emails.find(e => e !== from) || '';
     }
 
     // 提取主题: msgData[4]
     const subject = typeof msgData[4] === 'string' ? msgData[4] : '';
 
-    // 提取正文: msgData[5][1][0][2][1] (基于发现的路径)
+    // 提取日期: msgData[16] 是毫秒时间戳
+    let date = '';
+    const ts = msgData[16];
+    if (typeof ts === 'number' && ts > 1000000000000) {
+      date = new Date(ts).toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+
+    // 提取正文: msgData[5][1][*][2][1]
     let body = '';
     try {
       const bodyData = msgData[5] as unknown[];
       if (Array.isArray(bodyData) && Array.isArray(bodyData[1])) {
         const parts = bodyData[1] as unknown[];
-        // 可能有多个 body parts
         for (const part of parts) {
           if (Array.isArray(part) && Array.isArray(part[2])) {
             const htmlContent = part[2][1];
@@ -1219,9 +1239,11 @@ function parseGmailApiResponse(data: unknown, requestedThreadId: string | null):
     }
 
     if (body) {
-      // 将 HTML 转换为可读文本
       const readableBody = htmlToReadableText(body);
-      messages.push({ from, to, subject, date: '', body: readableBody });
+      messages.push({ from, to, subject, date, body: readableBody });
+      console.log(
+        `[Lovsider] 消息 ${msgIdx} 解析结果: from=${from}, to=${to}, date=${date}, subject=${subject.slice(0, 30)}`,
+      );
     }
   }
 
@@ -1280,7 +1302,16 @@ turndownService.addRule('cleanLinks', {
 
 function htmlToReadableText(html: string): string {
   // 预处理：移除 style 和 script
-  const cleaned = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+  let cleaned = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+
+  // 移除 Gmail 引用部分（避免递归重复）
+  // Gmail 引用结构：<div class="gmail_quote">...</div> 或 <blockquote class="gmail_quote">...</blockquote>
+  cleaned = cleaned.replace(/<div[^>]*class="[^"]*gmail_quote[^"]*"[^>]*>[\s\S]*$/gi, '');
+  cleaned = cleaned.replace(/<blockquote[^>]*class="[^"]*gmail_quote[^"]*"[^>]*>[\s\S]*$/gi, '');
+  // 移除 gmail_extra（包含 "On xxx wrote:" 引用头）
+  cleaned = cleaned.replace(/<div[^>]*class="[^"]*gmail_extra[^"]*"[^>]*>[\s\S]*$/gi, '');
+  // 移除通用 blockquote 引用（其他邮件客户端）
+  cleaned = cleaned.replace(/<blockquote[^>]*type="cite"[^>]*>[\s\S]*$/gi, '');
 
   let markdown = turndownService.turndown(cleaned);
 

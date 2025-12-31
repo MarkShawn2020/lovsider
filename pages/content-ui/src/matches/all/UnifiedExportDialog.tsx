@@ -3,7 +3,7 @@ import { Switch } from '../../components/Switch';
 import { useStorage } from '@extension/shared';
 import { claudeExportStorage, exportLayoutStorage } from '@extension/storage';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import type { ClaudeExportOptions } from '@extension/storage';
+import type { ClaudeExportOptions, MarkdownViewMode } from '@extension/storage';
 
 // 平台信息
 interface PlatformInfo {
@@ -277,7 +277,11 @@ export const UnifiedExportDialog = () => {
   const [showFetchOptions, setShowFetchOptions] = useState(false);
   const [shouldAutoFetch, setShouldAutoFetch] = useState(false); // 自动获取触发器
   const fetchOptionsRef = useRef<HTMLDivElement>(null);
-  const { dialogSize } = useStorage(exportLayoutStorage);
+  const { dialogSize, viewMode } = useStorage(exportLayoutStorage);
+  const safeViewMode = viewMode ?? 'raw';
+  const handleViewModeChange = useCallback((mode: MarkdownViewMode) => {
+    exportLayoutStorage.setViewMode(mode);
+  }, []);
   const [isResizing, setIsResizing] = useState(false);
   const safeDialogSize = dialogSize ?? { width: 520, height: 480 };
   const [localSize, setLocalSize] = useState({ width: safeDialogSize.width, height: safeDialogSize.height });
@@ -589,9 +593,14 @@ export const UnifiedExportDialog = () => {
     const messages: UnifiedMessage[] = [];
 
     for (const email of data) {
+      // 邮件元数据用 bullets（subject 统一放在正文顶部 h1）
+      const meta = `- **From:** ${email.from}
+- **To:** ${email.to}
+- **Date:** ${email.date}`;
+
       messages.push({
         role: 'human',
-        text: `**From:** ${email.from}\n**To:** ${email.to}\n**Date:** ${email.date}\n**Subject:** ${email.subject}\n\n${email.body}`,
+        text: `${meta}\n\n${email.body}`,
       });
     }
 
@@ -741,11 +750,19 @@ exported: ${data.exportedAt}
 messages: ${data.messages.length}
 ---
 
+# ${data.title}
+
 `;
 
-      for (const msg of data.messages) {
-        const role = msg.role === 'human' ? 'Human' : 'Assistant';
-        md += `## ${role}\n\n`;
+      for (let i = 0; i < data.messages.length; i++) {
+        const msg = data.messages[i];
+        // Gmail 使用序号标题，AI 对话使用 Human/Assistant
+        if (data.platform === 'gmail') {
+          md += `## 邮件 ${i + 1}\n\n`;
+        } else {
+          const role = msg.role === 'human' ? 'Human' : 'Assistant';
+          md += `## ${role}\n\n`;
+        }
 
         if (msg.thinking && aiOptions.includeThinking) {
           md += `<thinking>\n${msg.thinking}\n</thinking>\n\n`;
@@ -1234,7 +1251,13 @@ messages: ${data.messages.length}
                           </button>
                         </div>
                       )}
-                      <MarkdownViewer value={parsed.content} onChange={updateContent} placeholder="内容..." />
+                      <MarkdownViewer
+                        value={parsed.content}
+                        onChange={updateContent}
+                        placeholder="内容..."
+                        viewMode={safeViewMode}
+                        onViewModeChange={handleViewModeChange}
+                      />
                     </div>
                   )}
                 </div>
@@ -1269,9 +1292,9 @@ messages: ${data.messages.length}
                     alignItems: 'center',
                     gap: '6px',
                     padding: '8px 14px',
-                    borderRadius: chatData ? '10px 0 0 10px' : '10px',
+                    borderRadius: chatData && platformInfo?.platform !== 'gmail' ? '10px 0 0 10px' : '10px',
                     border: '1px solid #D5D3CB',
-                    borderRight: chatData ? 'none' : undefined,
+                    ...(chatData && platformInfo?.platform !== 'gmail' && { borderRight: 'none' }),
                     backgroundColor: '#fff',
                     color: '#666',
                     fontSize: '13px',
@@ -1302,8 +1325,8 @@ messages: ${data.messages.length}
                     </>
                   )}
                 </button>
-                {/* 下拉箭头 - 有数据时显示 */}
-                {chatData && (
+                {/* 下拉箭头 - 有数据且非 Gmail 时显示（Gmail 没有 thinking/toolCalls 选项） */}
+                {chatData && platformInfo?.platform !== 'gmail' && (
                   <button
                     onClick={() => setShowFetchOptions(!showFetchOptions)}
                     style={{
@@ -1322,7 +1345,7 @@ messages: ${data.messages.length}
                   </button>
                 )}
                 {/* 下拉菜单 */}
-                {showFetchOptions && chatData && (
+                {showFetchOptions && chatData && platformInfo?.platform !== 'gmail' && (
                   <div
                     style={{
                       position: 'absolute',
