@@ -1,3 +1,4 @@
+import { MarkdownViewer } from '../../components/MarkdownViewer';
 import { Switch } from '../../components/Switch';
 import { useStorage } from '@extension/shared';
 import { claudeExportStorage, exportLayoutStorage } from '@extension/storage';
@@ -1208,19 +1209,17 @@ messages: ${data.messages.length}
                         minHeight: '180px',
                         display: 'flex',
                         flexDirection: 'column',
-                        backgroundColor: '#f5f5f5',
                         overflow: 'hidden',
                       }}>
-                      {/* Header with toggle button */}
+                      {/* JSON 切换按钮 - 仅在有 chatData 时显示 */}
                       {chatData && (
                         <div
                           style={{
                             display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '8px 20px 0',
+                            justifyContent: 'flex-end',
+                            padding: '4px 16px 0',
+                            backgroundColor: '#fafafa',
                           }}>
-                          <span style={{ fontSize: '11px', color: '#666', fontWeight: 500 }}>Markdown</span>
                           <button
                             onClick={() => setShowJsonViewer(true)}
                             style={{
@@ -1235,22 +1234,7 @@ messages: ${data.messages.length}
                           </button>
                         </div>
                       )}
-                      <textarea
-                        value={parsed.content}
-                        onChange={e => updateContent(e.target.value)}
-                        placeholder="内容..."
-                        style={{
-                          flex: 1,
-                          padding: chatData ? '8px 20px 12px' : '12px 20px',
-                          border: 'none',
-                          backgroundColor: 'transparent',
-                          color: '#181818',
-                          fontSize: '12px',
-                          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                          resize: 'none',
-                          outline: 'none',
-                        }}
-                      />
+                      <MarkdownViewer value={parsed.content} onChange={updateContent} placeholder="内容..." />
                     </div>
                   )}
                 </div>

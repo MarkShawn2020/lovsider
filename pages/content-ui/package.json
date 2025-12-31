@@ -26,7 +26,9 @@
     "@extension/shared": "workspace:*",
     "@extension/storage": "workspace:*",
     "@extension/ui": "workspace:*",
-    "@radix-ui/react-switch": "^1.2.6"
+    "@radix-ui/react-switch": "^1.2.6",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@extension/hmr": "workspace:*",
