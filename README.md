@@ -8,7 +8,7 @@
 </h1>
 
 <p align="center">
-  <strong>AI Chat Export & Web Content Capture</strong><br>
+  <strong>AI Chat Export · Gmail Export · Web Content Capture</strong><br>
   <sub>Chrome Extension · Firefox Add-on</sub>
 </p>
 
@@ -46,7 +46,26 @@ Export conversations from **Claude.ai** and **Google AI Studio** with full fidel
 | Claude.ai | ✅ | ✅ |
 | Google AI Studio | ✅ | ✅ |
 
-### 2. Web Content Capture
+### 2. Gmail Export
+
+Export Gmail emails to Markdown with smart content extraction.
+
+**How to use:**
+- Open any email thread in Gmail
+- Click floating badge on the right side, or
+- Press `Cmd+E` (Mac) / `Ctrl+E` (Windows)
+
+**Features:**
+- **API-based** - Intercepts Gmail internal API for accurate content
+- **Thread Support** - Export entire email threads
+- **Clean Output** - Strips HTML formatting, outputs clean Markdown
+- **Multiple Formats** - Export as Markdown or JSON
+
+| Platform | Export |
+|----------|--------|
+| Gmail | ✅ |
+
+### 3. Web Content Capture
 
 Capture any web page content and export as Markdown via sidebar.
 
