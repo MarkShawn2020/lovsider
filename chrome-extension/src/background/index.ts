@@ -1,6 +1,6 @@
 import 'webextension-polyfill';
 import { dbManager, safeSendTabMessage } from '@extension/shared';
-import { downloadSettingsStorage } from '@extension/storage';
+import { downloadSettingsStorage, getDownloadSettingsFromFilePath } from '@extension/storage';
 
 console.log('[Lovsider] Background script loaded');
 
@@ -177,50 +177,51 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     (async () => {
       try {
         const { content, filename, mimeType } = request;
-        const settings = await downloadSettingsStorage.getSettings();
-
-        // 创建数据 URL
         const dataUrl = `data:${mimeType},${encodeURIComponent(content)}`;
+
+        const onDeterminingFilename = (
+          downloadItem: chrome.downloads.DownloadItem,
+          suggest: (suggestion?: chrome.downloads.DownloadFilenameSuggestion) => void,
+        ) => {
+          if (downloadItem.url !== dataUrl) {
+            suggest();
+            return;
+          }
+
+          chrome.downloads.onDeterminingFilename.removeListener(onDeterminingFilename);
+          suggest({ filename });
+        };
+
+        chrome.downloads.onDeterminingFilename.addListener(onDeterminingFilename);
 
         // 构建下载选项
         const downloadOptions: chrome.downloads.DownloadOptions = {
           url: dataUrl,
-          filename: settings.lastUsedPath ? `${settings.lastUsedPath}/${filename}` : filename,
           saveAs: true,
         };
 
-        const downloadId = await chrome.downloads.download(downloadOptions);
+        const downloadItemId = await chrome.downloads.download(downloadOptions).catch(error => {
+          chrome.downloads.onDeterminingFilename.removeListener(onDeterminingFilename);
+          throw error;
+        });
 
         // 监听下载完成
         let handled = false;
         const handleComplete = async () => {
           if (handled) return;
           handled = true;
+          chrome.downloads.onDeterminingFilename.removeListener(onDeterminingFilename);
           chrome.downloads.onChanged.removeListener(onDownloadChanged);
 
           // 获取下载信息
-          chrome.downloads.search({ id: downloadId }, async results => {
+          chrome.downloads.search({ id: downloadItemId }, async results => {
             if (results.length > 0 && results[0].filename) {
               const filePath = results[0].filename;
-
-              // 更新存储的路径
-              const pathParts = filePath.split(/[/\\]/);
-              const directoryPath = pathParts.slice(0, -1).join('/');
-              const homeDir = pathParts.find(part => part === 'Users' || part === 'home' || part.match(/^[A-Z]:$/))
-                ? pathParts.slice(0, 3).join('/')
-                : '';
-
-              let relativePath = '';
-              if (homeDir && directoryPath.startsWith(homeDir)) {
-                const downloadsIndex = pathParts.findIndex(part => part.toLowerCase() === 'downloads');
-                if (downloadsIndex !== -1 && downloadsIndex < pathParts.length) {
-                  relativePath = pathParts.slice(downloadsIndex, -1).join('/');
-                }
-              }
+              const downloadPathSettings = getDownloadSettingsFromFilePath(filePath);
 
               await downloadSettingsStorage.updateSettings({
-                lastUsedPath: relativePath,
-                lastUsedAbsolutePath: directoryPath,
+                lastUsedPath: downloadPathSettings.lastUsedPath,
+                lastUsedAbsolutePath: downloadPathSettings.lastUsedAbsolutePath,
               });
 
               sendResponse({ success: true, filePath });
@@ -231,10 +232,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         };
 
         const onDownloadChanged = (delta: chrome.downloads.DownloadDelta) => {
-          if (delta.id === downloadId && delta.state?.current === 'complete') {
+          if (delta.id === downloadItemId && delta.state?.current === 'complete') {
             handleComplete();
-          } else if (delta.id === downloadId && delta.state?.current === 'interrupted') {
+          } else if (delta.id === downloadItemId && delta.state?.current === 'interrupted') {
             handled = true;
+            chrome.downloads.onDeterminingFilename.removeListener(onDeterminingFilename);
             chrome.downloads.onChanged.removeListener(onDownloadChanged);
             sendResponse({ success: false, error: 'Download was interrupted' });
           }
@@ -243,7 +245,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         chrome.downloads.onChanged.addListener(onDownloadChanged);
 
         // 立即检查（处理瞬间完成的情况）
-        chrome.downloads.search({ id: downloadId }, results => {
+        chrome.downloads.search({ id: downloadItemId }, results => {
           if (results.length > 0 && results[0].state === 'complete') {
             handleComplete();
           }

@@ -15,19 +15,74 @@ export interface DownloadSettingsStateType {
 }
 
 const defaultSettings: DownloadSettings = {
-  defaultPath: 'Downloads',
+  defaultPath: '',
   useDefaultPath: false,
   lastUsedPath: '',
   lastUsedAbsolutePath: '',
   askForLocation: true,
 };
 
-const normalizeRelativePath = (path?: string) => {
-  if (!path || path === '__CHROME_DEFAULT__') {
+const CHROME_DEFAULT_PATH = '__CHROME_DEFAULT__';
+const DOWNLOADS_DIRECTORY = 'downloads';
+
+const splitPath = (path: string) => path.replace(/\\/g, '/').split('/').filter(Boolean);
+
+const removeLeadingDownloads = (parts: string[]) => {
+  const normalizedParts = [...parts];
+
+  while (normalizedParts[0]?.toLowerCase() === DOWNLOADS_DIRECTORY) {
+    normalizedParts.shift();
+  }
+
+  return normalizedParts;
+};
+
+const getRelativePathFromDownloadsDirectory = (path: string) => {
+  const pathParts = splitPath(path);
+  const downloadsIndex = pathParts.findIndex(part => part.toLowerCase() === DOWNLOADS_DIRECTORY);
+
+  if (downloadsIndex === -1) {
     return '';
   }
 
-  return path;
+  return removeLeadingDownloads(pathParts.slice(downloadsIndex + 1)).join('/');
+};
+
+export const normalizeDownloadRelativePath = (path?: string) => {
+  const trimmedPath = path?.trim();
+
+  if (!trimmedPath || trimmedPath === CHROME_DEFAULT_PATH) {
+    return '';
+  }
+
+  if (trimmedPath.startsWith('~/') || trimmedPath.startsWith('~\\')) {
+    return getRelativePathFromDownloadsDirectory(trimmedPath.slice(2));
+  }
+
+  if (/^(\/|[A-Za-z]:[\\/])/.test(trimmedPath)) {
+    return getRelativePathFromDownloadsDirectory(trimmedPath);
+  }
+
+  const normalizedParts = removeLeadingDownloads(splitPath(trimmedPath));
+  return normalizedParts.join('/');
+};
+
+export const getDownloadSettingsFromFilePath = (filePath: string) => {
+  const separator = filePath.includes('\\') ? '\\' : '/';
+  const pathParts = filePath.split(/[/\\]/);
+  pathParts.pop();
+
+  let directoryPath = pathParts.join(separator);
+  if (!directoryPath && filePath.startsWith('/')) {
+    directoryPath = '/';
+  } else if (/^[A-Za-z]:$/.test(directoryPath)) {
+    directoryPath = `${directoryPath}${separator}`;
+  }
+
+  return {
+    lastUsedPath: getRelativePathFromDownloadsDirectory(directoryPath),
+    lastUsedAbsolutePath: directoryPath,
+  };
 };
 
 const storage = createStorage<DownloadSettingsStateType>(
@@ -57,22 +112,30 @@ export const downloadSettingsStorage: DownloadSettingsStorageType = {
   getSettings: async () => {
     const state = await storage.get();
     const settings = state.settings ?? defaultSettings;
+    const lastUsedAbsolutePath = settings.lastUsedAbsolutePath ?? defaultSettings.lastUsedAbsolutePath;
 
     return {
       ...defaultSettings,
       ...settings,
-      lastUsedPath: normalizeRelativePath(settings.lastUsedPath),
-      lastUsedAbsolutePath: settings.lastUsedAbsolutePath ?? defaultSettings.lastUsedAbsolutePath,
+      lastUsedPath: lastUsedAbsolutePath
+        ? getRelativePathFromDownloadsDirectory(lastUsedAbsolutePath)
+        : normalizeDownloadRelativePath(settings.lastUsedPath),
+      lastUsedAbsolutePath,
     };
   },
 
   // 更新设置
   updateSettings: async (newSettings: Partial<DownloadSettings>) => {
+    const normalizedSettings: Partial<DownloadSettings> = { ...newSettings };
+    if (normalizedSettings.lastUsedPath !== undefined) {
+      normalizedSettings.lastUsedPath = normalizeDownloadRelativePath(normalizedSettings.lastUsedPath);
+    }
+
     await storage.set(currentState => ({
       ...currentState,
       settings: {
         ...currentState.settings,
-        ...newSettings,
+        ...normalizedSettings,
       },
     }));
   },
@@ -94,7 +157,7 @@ export const downloadSettingsStorage: DownloadSettingsStorageType = {
       ...currentState,
       settings: {
         ...currentState.settings,
-        lastUsedPath: path,
+        lastUsedPath: normalizeDownloadRelativePath(path),
       },
     }));
   },
