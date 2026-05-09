@@ -1,5 +1,14 @@
 # chrome-extension
 
+## 1.5.1
+
+### Patch Changes
+
+- fix: 不再移除页面自身的 lovinsp-component，修复与 lovinsp Vite 插件的冲突
+- feat(export): 添加 Markdown 预览模式支持
+- fix(export): Gmail 邮件导出优化 + 视图模式持久化
+- fix(download): 修复保存位置记忆与单次弹窗
+
 ## 1.5.0
 
 ### Minor Changes

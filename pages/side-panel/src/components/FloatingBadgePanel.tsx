@@ -11,7 +11,7 @@ import { useState, useEffect } from 'react';
 import type { FloatingBadgeConfig } from '@extension/storage';
 
 export const FloatingBadgePanel = ({ onClose }: { onClose: () => void }) => {
-  const [enabled, setEnabled] = useState(true);
+  const [enabled, setEnabled] = useState(false);
   const [config, setConfig] = useState<FloatingBadgeConfig>({
     position: 'right',
     offset: { x: 20, y: 100 },
@@ -36,7 +36,7 @@ export const FloatingBadgePanel = ({ onClose }: { onClose: () => void }) => {
     const loadSettings = async () => {
       try {
         const data = await floatingBadgeStorage.getSettings();
-        setEnabled(data.enabled ?? true);
+        setEnabled(data.enabled ?? false);
         // 合并默认配置，防止旧数据缺少字段
         setConfig(prev => ({ ...prev, ...data.config }));
         setBlacklist(data.blacklist || []);
@@ -60,7 +60,7 @@ export const FloatingBadgePanel = ({ onClose }: { onClose: () => void }) => {
       if (areaName === 'local' && changes['floating-badge-storage-key']) {
         const newData = changes['floating-badge-storage-key'].newValue;
         if (newData) {
-          setEnabled(newData.enabled ?? true);
+          setEnabled(newData.enabled ?? false);
           // 合并默认配置，防止旧数据缺少字段
           if (newData.config) {
             setConfig(prev => ({ ...prev, ...newData.config }));

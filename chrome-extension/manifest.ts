@@ -66,12 +66,6 @@ const manifest = {
       css: ['content.css'],
     },
     {
-      // lovinsp 清理脚本 - 必须在 document_start 运行，移除第三方页面的 lovinsp-component
-      matches: ['https://claude.ai/*', 'https://aistudio.google.com/*', 'https://mail.google.com/*'],
-      js: ['lovinsp-cleanup.js'],
-      run_at: 'document_start',
-    },
-    {
       // Gmail API hook - 必须在 document_start 运行，在 CSP 生效前注入
       matches: ['https://mail.google.com/*'],
       js: ['gmail-hook-inject.js'],

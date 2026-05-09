@@ -169,7 +169,6 @@ export class AIExportBadge {
 
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
-      document.body.style.userSelect = 'none';
     };
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -197,7 +196,6 @@ export class AIExportBadge {
       this.container!.classList.remove('dragging');
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.userSelect = '';
 
       if (!this.isDragging && timeDiff < 300) {
         this.openExportDialog();

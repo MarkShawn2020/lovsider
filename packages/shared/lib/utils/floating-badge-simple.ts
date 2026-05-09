@@ -113,13 +113,13 @@ export class FloatingBadgeSimple {
       }
 
       /* 拖拽时的提示动画 */
-      @keyframes dragHint {
+      @keyframes lovsider-simple-badge-drag-hint {
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-2px); }
       }
 
       #lovsider-simple-badge.drag-ready button {
-        animation: dragHint 1.5s ease-in-out infinite;
+        animation: lovsider-simple-badge-drag-hint 1.5s ease-in-out infinite;
       }
 
       /* 长按提示效果 */
@@ -371,10 +371,6 @@ export class FloatingBadgeSimple {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
 
-      // 防止文本选择
-      document.body.style.userSelect = 'none';
-      document.body.style.webkitUserSelect = 'none';
-
       // 设置长按提示（如果300ms后还没移动，显示可拖拽提示）
       setTimeout(() => {
         if (!this.hasMoved && this.button?.classList.contains('pressing')) {
@@ -424,10 +420,6 @@ export class FloatingBadgeSimple {
       // 移除事件监听
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
-
-      // 恢复文本选择
-      document.body.style.userSelect = '';
-      document.body.style.webkitUserSelect = '';
 
       // 判断是点击还是拖拽
       if (!this.isDragging && timeDiff < 500) {

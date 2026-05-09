@@ -821,9 +821,6 @@ async function initializeFloatingBadge() {
     const storageData = result['floating-badge-storage-key'];
 
     if (!storageData) {
-      // 使用默认配置
-      floatingBadge = new FloatingBadgeSimple();
-      floatingBadge.init();
       return;
     }
 
@@ -900,17 +897,6 @@ chrome.runtime?.onMessage?.addListener((request, sender, sendResponse) => {
   return false;
 });
 
-// 初始化 AI 导出按钮（仅在 AI 平台页面显示）
-let aiExportBadge: AIExportBadge | null = null;
-
-function initializeAIExportBadge() {
-  // 检测是否是 AI 平台页面
-  if (AIExportBadge.detectPlatform()) {
-    aiExportBadge = new AIExportBadge();
-    aiExportBadge.init();
-  }
-}
-
 // 监听来自 content-ui 的 postMessage（用于 Gmail 数据获取）
 window.addEventListener('message', async event => {
   if (event.data?.type === 'lovsider-fetch-gmail-thread') {
@@ -935,13 +921,11 @@ window.addEventListener('message', async event => {
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     initializeFloatingBadge();
-    initializeAIExportBadge();
   });
 } else {
   // 延迟初始化，避免影响页面加载
   setTimeout(() => {
     initializeFloatingBadge();
-    initializeAIExportBadge();
   }, 500);
 }
 

@@ -50,7 +50,7 @@ const defaultConfig: FloatingBadgeConfig = {
 const storage = createStorage<FloatingBadgeStorageData>(
   'floating-badge-storage-key',
   {
-    enabled: true,
+    enabled: false,
     config: defaultConfig,
     states: {},
     blacklist: [],

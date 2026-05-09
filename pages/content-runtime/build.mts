@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { makeEntryPointPlugin } from '@extension/hmr';
-import { getContentScriptEntries, withPageConfig } from '@extension/vite-config';
+import { getContentScriptEntries, withContentScriptConfig } from '@extension/vite-config';
 import { IS_DEV } from '@extension/env';
 import { build } from 'vite';
 import { build as buildTW } from 'tailwindcss/lib/cli/build';
@@ -11,7 +11,7 @@ const matchesDir = resolve(srcDir, 'matches');
 
 const configs = Object.entries(getContentScriptEntries(matchesDir)).map(([name, entry]) => ({
   name,
-  config: withPageConfig({
+  config: withContentScriptConfig({
     mode: IS_DEV ? 'development' : undefined,
     resolve: {
       alias: {

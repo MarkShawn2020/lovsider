@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { makeEntryPointPlugin } from '@extension/hmr';
-import { getContentScriptEntries, withPageConfig } from '@extension/vite-config';
+import { getContentScriptEntries, withContentScriptConfig } from '@extension/vite-config';
 import { IS_DEV } from '@extension/env';
 import { build } from 'vite';
 
@@ -9,7 +9,7 @@ const srcDir = resolve(rootDir, 'src');
 const matchesDir = resolve(srcDir, 'matches');
 
 const configs = Object.entries(getContentScriptEntries(matchesDir)).map(([name, entry]) =>
-  withPageConfig({
+  withContentScriptConfig({
     mode: IS_DEV ? 'development' : undefined,
     resolve: {
       alias: {
